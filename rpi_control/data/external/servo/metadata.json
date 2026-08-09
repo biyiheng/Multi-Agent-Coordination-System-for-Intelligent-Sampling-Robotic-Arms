@@ -1,0 +1,11 @@
+{
+  "num_models": 12,
+  "total_samples": 12000,
+  "sources": [
+    "Tower Pro Official Datasheets",
+    "DFRobot DS3218 Datasheet",
+    "Hitec Official Datasheets",
+    "LewanSoul LDX-218 Datasheet",
+    "Public Servo Database"
+  ]
+}

@@ -1,0 +1,19 @@
+# .NET build artifacts
+bin/
+obj/
+*.user
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Generated / runtime artifacts
+e2e_merged_log.json
+*.exe
+*.dll
+
+# OS
+.DS_Store
+Thumbs.db

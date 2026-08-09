@@ -1,0 +1,28 @@
+dh_params:
+  # [a, alpha, d, theta_offset] for each joint
+  joint_0: [0, 90, 85, 0]    # Base rotation
+  joint_1: [120, 0, 0, -90]   # Shoulder
+  joint_2: [110, 0, 0, 0]     # Elbow
+  joint_3: [0, 90, 0, 0]      # Wrist pitch
+  joint_4: [0, -90, 95, 0]    # Wrist roll
+  joint_5: [0, 0, 65, 0]      # Gripper
+
+servo_limits:
+  # [min_pwm, max_pwm, home_pwm]
+  joint_0: [500, 2500, 1500]
+  joint_1: [600, 2400, 1500]
+  joint_2: [600, 2400, 1500]
+  joint_3: [500, 2500, 1500]
+  joint_4: [500, 2500, 1500]
+  joint_5: [500, 1800, 1000]  # Gripper
+
+gripper:
+  open_pwm: 500
+  close_pwm: 1800
+  grip_force: 1500
+  adaptive_enabled: true
+
+workspace:
+  x_range: [-200, 200]
+  y_range: [-200, 200]
+  z_range: [0, 300]

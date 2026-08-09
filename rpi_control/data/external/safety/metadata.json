@@ -1,0 +1,24 @@
+{
+  "total_samples": 5000,
+  "safe_ratio": 0.7032,
+  "violation_types": [
+    "communication_loss",
+    "joint_limit",
+    "over_force",
+    "over_speed",
+    "workspace_violation",
+    "temperature_warning",
+    "collision_risk"
+  ],
+  "standards": [
+    "power_force_limiting",
+    "speed_monitoring",
+    "separation_monitoring",
+    "safety_integrity"
+  ],
+  "sources": [
+    "ISO/TS 15066:2016",
+    "ISO 10218-1:2011",
+    "ISO 13849-1:2015"
+  ]
+}

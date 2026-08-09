@@ -1,0 +1,267 @@
+﻿
+======================================================================
+  ROUND 3 ONLY: Final Precision & Stability Tuning
+======================================================================
+  Maximum epochs, best ensemble, strict regularization
+  Motion: 1000 epochs
+  Safety: 1000 epochs
+  Quality: 2000 epochs
+  Collision: 600 epochs, 11 ensemble
+
+  --- Phase 1: Data Generation, Cleaning & Preprocessing ---
+
+============================================================
+  Phase 1: Data Generation (Round 11 - Super-Expanded)
+============================================================
+  Saved 60000 samples to data\training\motion_dataset.json
+  Saved 40000 samples to data\training\ik_dataset.json
+  Removed 1439 duplicate samples from vision_dataset.json
+  Saved 28561 samples to data\training\vision_dataset.json
+  Saved 40000 samples to data\training\safety_dataset.json
+  Removed 5732 duplicate samples from quality_dataset.json
+  Saved 34268 samples to data\training\quality_dataset.json
+  Saved 2500 samples to data\training\sampling_dataset.json
+  Saved 25000 samples to data\training\collision_dataset.json
+  Saved 2565 samples to data\training\trajectory_dataset.json
+  Saved 10000 samples to data\training\edge_case_ik.json
+  Removed 14 duplicate samples from noisy_vision_dataset.json
+  Saved 11986 samples to data\training\noisy_vision_dataset.json
+  Saved 15000 samples to data\training\multi_obstacle_collision.json
+  Saved 8000 samples to data\training\sequential_motion.json
+  Saved 12000 samples to data\training\velocity_profile.json
+  Saved 12000 samples to data\training\multi_sensor_fusion.json
+  Saved 3000 samples to data\training\workspace_diversity.json
+
+============================================================
+  Phase 2: Data Cleaning & Quality Statistics (Round 11)
+============================================================
+  Saved 40000 samples to data\training\ik_dataset.json
+  [Clean] safety: 40000 → 37012 (NaN:0, Inf:0, Dup:0, Outlier:2988)
+  [Stats] safety: 37012 samples, class_balance={'safe': 28022, 'unsafe': 8990, 'safe_ratio': 0.7571058035231817}
+  Saved 37012 samples to data\training\safety_dataset.json
+  Saved 34268 samples to data\training\quality_dataset.json
+  [Stats] collision: 25000 samples, class_balance={'collision': 521, 'safe': 24479, 'collision_ratio': 0.02084}
+  Saved 25000 samples to data\training\collision_dataset.json
+  [Stats] multi_obstacle: 15000 samples, class_balance={'collision': 613, 'safe': 14387, 'collision_ratio': 0.04086666666666667}
+  Saved 15000 samples to data\training\multi_obstacle_collision.json
+
+  Data quality report saved to: data\training\data_quality_report.json
+
+============================================================
+  Phase 3: Data Preprocessing (Noise Augmentation 3x - Round 11)
+============================================================
+  [Preprocess] ik: 40000 → 120000 (augmentation: 3x)
+  Saved 120000 samples to data\training\ik_dataset.json
+  [Preprocess] safety: 37012 → 111036 (augmentation: 3x)
+  Saved 111036 samples to data\training\safety_dataset.json
+  [Preprocess] quality: 34268 → 102804 (augmentation: 3x)
+  Saved 102804 samples to data\training\quality_dataset.json
+  [Preprocess] collision: 25000 → 75000 (augmentation: 3x)
+  Saved 75000 samples to data\training\collision_dataset.json
+  [Preprocess] multi_obstacle: 15000 → 45000 (augmentation: 3x)
+  Saved 45000 samples to data\training\multi_obstacle_collision.json
+
+  Total datasets: 15, Total samples: 605905
+
+  --- Phase 2: Model Training with Real-time Monitoring ---
+
+  [Motion Model] Round 3 - Final Precision & Stability Tuning
+  Config: epochs=1000
+
+  Training Motion (IK) Model (Round 9: fixed seed)...
+    Epoch 50/1000: loss=0.090335, val_loss=0.040364, lr=0.000994
+  [model] █░░░░░░░░░░░░░░░░░░░   5.1% | Epoch 51/1000 | loss=0.092450(smooth=0.093783), val=0.044200(smooth=0.043534) | trend=improving | ETA=21041s
+    Epoch 100/1000: loss=0.073101, val_loss=0.028009, lr=0.000976
+  [model] ██░░░░░░░░░░░░░░░░░░  10.1% | Epoch 101/1000 | loss=0.072530(smooth=0.072677), val=0.028502(smooth=0.028189) | trend=stable | ETA=23032s
+    Epoch 150/1000: loss=0.060674, val_loss=0.021503, lr=0.000946
+  [model] ███░░░░░░░░░░░░░░░░░  15.1% | Epoch 151/1000 | loss=0.060012(smooth=0.061423), val=0.020871(smooth=0.020891) | trend=stable | ETA=20751s
+    Epoch 200/1000: loss=0.055347, val_loss=0.019003, lr=0.000905
+  [model] ████░░░░░░░░░░░░░░░░  20.1% | Epoch 201/1000 | loss=0.054689(smooth=0.055605), val=0.018437(smooth=0.018347) | trend=stable | ETA=19045s
+    Epoch 250/1000: loss=0.050612, val_loss=0.015045, lr=0.000855
+  [model] █████░░░░░░░░░░░░░░░  25.1% | Epoch 251/1000 | loss=0.053944(smooth=0.051593), val=0.014447(smooth=0.015337) | trend=stable | ETA=16543s
+    Epoch 300/1000: loss=0.047983, val_loss=0.013717, lr=0.000795
+  [model] ██████░░░░░░░░░░░░░░  30.1% | Epoch 301/1000 | loss=0.047103(smooth=0.047684), val=0.014402(smooth=0.013998) | trend=stable | ETA=14360s
+    Epoch 350/1000: loss=0.044698, val_loss=0.012867, lr=0.000728
+  [model] ███████░░░░░░░░░░░░░  35.1% | Epoch 351/1000 | loss=0.044984(smooth=0.045135), val=0.013452(smooth=0.013591) | trend=stable | ETA=12627s
+    Epoch 400/1000: loss=0.042749, val_loss=0.012574, lr=0.000656
+  [model] ████████░░░░░░░░░░░░  40.1% | Epoch 401/1000 | loss=0.043974(smooth=0.043076), val=0.012406(smooth=0.012232) | trend=stable | ETA=11160s
+    Epoch 450/1000: loss=0.041039, val_loss=0.011246, lr=0.000580
+  [model] █████████░░░░░░░░░░░  45.1% | Epoch 451/1000 | loss=0.040490(smooth=0.041096), val=0.011068(smooth=0.011403) | trend=stable | ETA=9893s
+    Epoch 500/1000: loss=0.040134, val_loss=0.011728, lr=0.000502
+  [model] ██████████░░░░░░░░░░  50.1% | Epoch 501/1000 | loss=0.040188(smooth=0.039818), val=0.011413(smooth=0.010944) | trend=stable | ETA=8763s
+    Epoch 550/1000: loss=0.038891, val_loss=0.009920, lr=0.000423
+  [model] ███████████░░░░░░░░░  55.1% | Epoch 551/1000 | loss=0.038979(smooth=0.038697), val=0.010668(smooth=0.010165) | trend=stable | ETA=7714s
+    Epoch 600/1000: loss=0.036732, val_loss=0.010183, lr=0.000347
+  [model] ████████████░░░░░░░░  60.1% | Epoch 601/1000 | loss=0.036950(smooth=0.037595), val=0.009503(smooth=0.009926) | trend=stable | ETA=6734s
+    Epoch 650/1000: loss=0.036526, val_loss=0.009513, lr=0.000274
+  [model] █████████████░░░░░░░  65.1% | Epoch 651/1000 | loss=0.036305(smooth=0.036238), val=0.009233(smooth=0.009401) | trend=stable | ETA=5797s
+    Epoch 700/1000: loss=0.035938, val_loss=0.009439, lr=0.000207
+  [model] ██████████████░░░░░░  70.1% | Epoch 701/1000 | loss=0.035942(smooth=0.035523), val=0.009728(smooth=0.009530) | trend=stable | ETA=4898s
+    Epoch 750/1000: loss=0.036113, val_loss=0.008991, lr=0.000148
+  [model] ███████████████░░░░░  75.1% | Epoch 751/1000 | loss=0.035021(smooth=0.034703), val=0.008696(smooth=0.008907) | trend=stable | ETA=4027s
+    Epoch 800/1000: loss=0.033474, val_loss=0.008896, lr=0.000096
+  [model] ████████████████░░░░  80.1% | Epoch 801/1000 | loss=0.034505(smooth=0.034097), val=0.008688(smooth=0.008885) | trend=stable | ETA=3182s
+    Epoch 850/1000: loss=0.033396, val_loss=0.008289, lr=0.000055
+  [model] █████████████████░░░  85.1% | Epoch 851/1000 | loss=0.034231(smooth=0.033917), val=0.008809(smooth=0.008557) | trend=stable | ETA=2356s
+    Epoch 900/1000: loss=0.032973, val_loss=0.008702, lr=0.000025
+  [model] ██████████████████░░  90.1% | Epoch 901/1000 | loss=0.032551(smooth=0.033319), val=0.008655(smooth=0.008555) | trend=stable | ETA=1551s
+    Epoch 950/1000: loss=0.032747, val_loss=0.008094, lr=0.000006
+  [model] ███████████████████░  95.1% | Epoch 951/1000 | loss=0.032316(smooth=0.032795), val=0.008656(smooth=0.008549) | trend=stable | ETA=761s
+    Epoch 1000/1000: loss=0.033844, val_loss=0.008234, lr=0.000000
+    R²=0.9931, MAE=0.0728 rad (4.2°)
+    Per-joint R²: ['0.995', '0.993', '0.990', '0.994', '0.988', '0.992']
+  Motion training time: 15422.4s (257.0 min)
+
+  [Safety Model] Round 3 - Final Precision & Stability Tuning
+  Config: epochs=1000
+
+  Training Safety Model (Round 9: diverse boundary samples)...
+    Features: 19 (simplified from 27), samples: 111036
+    Epoch 50/1000: loss=0.045483, val_loss=0.041643, lr=0.000994
+  [model] █░░░░░░░░░░░░░░░░░░░   5.1% | Epoch 51/1000 | loss=0.045377(smooth=0.045646), val=0.041920(smooth=0.042155) | trend=stable | ETA=896s
+    Epoch 100/1000: loss=0.042920, val_loss=0.041179, lr=0.000976
+  [model] ██░░░░░░░░░░░░░░░░░░  10.1% | Epoch 101/1000 | loss=0.043079(smooth=0.043049), val=0.040837(smooth=0.040559) | trend=stable | ETA=841s
+    Epoch 150/1000: loss=0.041043, val_loss=0.038583, lr=0.000946
+  [model] ███░░░░░░░░░░░░░░░░░  15.1% | Epoch 151/1000 | loss=0.041151(smooth=0.041308), val=0.038850(smooth=0.039024) | trend=stable | ETA=791s
+    Epoch 200/1000: loss=0.040124, val_loss=0.037209, lr=0.000905
+  [model] ████░░░░░░░░░░░░░░░░  20.1% | Epoch 201/1000 | loss=0.039851(smooth=0.040084), val=0.038192(smooth=0.037837) | trend=stable | ETA=743s
+    Epoch 250/1000: loss=0.039229, val_loss=0.036626, lr=0.000855
+  [model] █████░░░░░░░░░░░░░░░  25.1% | Epoch 251/1000 | loss=0.038880(smooth=0.039128), val=0.036705(smooth=0.036978) | trend=stable | ETA=695s
+    Epoch 300/1000: loss=0.038115, val_loss=0.036516, lr=0.000795
+  [model] ██████░░░░░░░░░░░░░░  30.1% | Epoch 301/1000 | loss=0.037822(smooth=0.038092), val=0.035909(smooth=0.036241) | trend=stable | ETA=648s
+    Epoch 350/1000: loss=0.037290, val_loss=0.035691, lr=0.000728
+  [model] ███████░░░░░░░░░░░░░  35.1% | Epoch 351/1000 | loss=0.037180(smooth=0.037451), val=0.035352(smooth=0.035775) | trend=stable | ETA=601s
+    Epoch 400/1000: loss=0.036391, val_loss=0.034295, lr=0.000656
+  [model] ████████░░░░░░░░░░░░  40.1% | Epoch 401/1000 | loss=0.036799(smooth=0.036795), val=0.034650(smooth=0.034968) | trend=stable | ETA=554s
+    Epoch 450/1000: loss=0.036479, val_loss=0.034394, lr=0.000580
+  [model] █████████░░░░░░░░░░░  45.1% | Epoch 451/1000 | loss=0.035863(smooth=0.036207), val=0.034054(smooth=0.034526) | trend=stable | ETA=508s
+    Epoch 500/1000: loss=0.035604, val_loss=0.034433, lr=0.000502
+  [model] ██████████░░░░░░░░░░  50.1% | Epoch 501/1000 | loss=0.035687(smooth=0.035583), val=0.033866(smooth=0.034128) | trend=stable | ETA=461s
+    Epoch 550/1000: loss=0.035466, val_loss=0.033990, lr=0.000423
+  [model] ███████████░░░░░░░░░  55.1% | Epoch 551/1000 | loss=0.034866(smooth=0.035035), val=0.034061(smooth=0.034015) | trend=stable | ETA=415s
+    Epoch 600/1000: loss=0.034008, val_loss=0.032853, lr=0.000347
+  [model] ████████████░░░░░░░░  60.1% | Epoch 601/1000 | loss=0.034355(smooth=0.034241), val=0.033234(smooth=0.033457) | trend=stable | ETA=369s
+    Epoch 650/1000: loss=0.033748, val_loss=0.033615, lr=0.000274
+  [model] █████████████░░░░░░░  65.1% | Epoch 651/1000 | loss=0.033915(smooth=0.033751), val=0.033574(smooth=0.033202) | trend=stable | ETA=323s
+    Early stopping at epoch 693
+    Accuracy=0.9604, Precision=0.9590, Recall=0.9902, F1=0.9743 (threshold=0.40)
+  Safety training time: 641.9s (10.7 min)
+
+  [Quality Model] Round 3 - Final Precision & Stability Tuning
+  Config: epochs=2000
+
+  Training Quality Model (Round 9: deterministic mapping, verified)...
+    Features: 29, samples: 102804
+    Epoch 50/2000: loss=0.002020, val_loss=0.001197, lr=0.000499
+    Epoch 100/2000: loss=0.001544, val_loss=0.001056, lr=0.000497
+  [model] █░░░░░░░░░░░░░░░░░░░   5.1% | Epoch 101/2000 | loss=0.001538(smooth=0.001566), val=0.001065(smooth=0.001091) | trend=stable | ETA=4091s
+    Epoch 150/2000: loss=0.001343, val_loss=0.001001, lr=0.000493
+    Epoch 200/2000: loss=0.001224, val_loss=0.000981, lr=0.000488
+  [model] ██░░░░░░░░░░░░░░░░░░  10.1% | Epoch 201/2000 | loss=0.001236(smooth=0.001239), val=0.000967(smooth=0.000981) | trend=stable | ETA=3879s
+    Epoch 250/2000: loss=0.001154, val_loss=0.000963, lr=0.000481
+    Epoch 300/2000: loss=0.001092, val_loss=0.000919, lr=0.000473
+  [model] ███░░░░░░░░░░░░░░░░░  15.0% | Epoch 301/2000 | loss=0.001094(smooth=0.001090), val=0.000931(smooth=0.000932) | trend=stable | ETA=3664s
+    Epoch 350/2000: loss=0.001056, val_loss=0.000929, lr=0.000463
+    Epoch 400/2000: loss=0.001023, val_loss=0.000913, lr=0.000452
+  [model] ████░░░░░░░░░░░░░░░░  20.1% | Epoch 401/2000 | loss=0.001019(smooth=0.001022), val=0.000914(smooth=0.000916) | trend=stable | ETA=3456s
+    Epoch 450/2000: loss=0.000997, val_loss=0.000906, lr=0.000440
+    Epoch 500/2000: loss=0.000974, val_loss=0.000897, lr=0.000427
+  [model] █████░░░░░░░░░░░░░░░  25.1% | Epoch 501/2000 | loss=0.000975(smooth=0.000981), val=0.000923(smooth=0.000906) | trend=stable | ETA=3240s
+    Epoch 550/2000: loss=0.000978, val_loss=0.000893, lr=0.000413
+    Epoch 600/2000: loss=0.000957, val_loss=0.000910, lr=0.000397
+  [model] ██████░░░░░░░░░░░░░░  30.0% | Epoch 601/2000 | loss=0.000961(smooth=0.000959), val=0.000914(smooth=0.000909) | trend=stable | ETA=3026s
+    Epoch 650/2000: loss=0.000950, val_loss=0.000918, lr=0.000381
+    Epoch 700/2000: loss=0.000954, val_loss=0.000899, lr=0.000364
+  [model] ███████░░░░░░░░░░░░░  35.0% | Epoch 701/2000 | loss=0.000955(smooth=0.000948), val=0.000906(smooth=0.000904) | trend=stable | ETA=2810s
+    Early stopping at epoch 743
+    R²=0.9835, MAE=3.40, RMSE=4.42, ClsAcc=0.9281 (single robust model)
+  Quality training time: 1608.8s (26.8 min)
+
+  [Collision Model] Round 3 - Final Precision & Stability Tuning
+  Config: epochs=600, ensemble=11
+
+  Training Collision Detection Model (Round 9: 7-ensemble, diverse negatives)...
+    Features: 17, samples: 50000 (real=45000, synthetic=5000)
+    Labels: collision=2456, safe=47544 (4.9% collision)
+    Oversampled collision: 2456 → 20376 (30.0% of total)
+    Ensemble model 1/11...
+  [model] █░░░░░░░░░░░░░░░░░░░   5.2% | Epoch 31/600 | loss=0.025350(smooth=0.025950), val=0.025611(smooth=0.024645) | trend=stable | ETA=604s
+    Epoch 50/600: loss=0.024678, val_loss=0.025484, lr=0.001967
+  [model] ██░░░░░░░░░░░░░░░░░░  10.2% | Epoch 61/600 | loss=0.024608(smooth=0.024681), val=0.023687(smooth=0.025037) | trend=stable | ETA=572s
+  [model] ███░░░░░░░░░░░░░░░░░  15.2% | Epoch 91/600 | loss=0.024345(smooth=0.024503), val=0.024197(smooth=0.024381) | trend=stable | ETA=540s
+    Epoch 100/600: loss=0.024266, val_loss=0.023604, lr=0.001869
+  [model] ████░░░░░░░░░░░░░░░░  20.2% | Epoch 121/600 | loss=0.024413(smooth=0.024199), val=0.024577(smooth=0.025390) | trend=stable | ETA=508s
+    Early stopping at epoch 125
+    Ensemble model 2/11...
+  [model] █░░░░░░░░░░░░░░░░░░░   5.2% | Epoch 31/600 | loss=0.025117(smooth=0.025440), val=0.024930(smooth=0.027982) | trend=stable | ETA=605s
+  [model] ██░░░░░░░░░░░░░░░░░░  10.2% | Epoch 61/600 | loss=0.025028(smooth=0.024866), val=0.029353(smooth=0.025572) | trend=stable | ETA=573s
+  [model] ███░░░░░░░░░░░░░░░░░  15.2% | Epoch 91/600 | loss=0.024499(smooth=0.024376), val=0.023793(smooth=0.023994) | trend=stable | ETA=542s
+    Ensemble model 3/11...
+  [model] █░░░░░░░░░░░░░░░░░░░   5.2% | Epoch 31/600 | loss=0.026046(smooth=0.025781), val=0.024624(smooth=0.025181) | trend=stable | ETA=615s
+  [model] ██░░░░░░░░░░░░░░░░░░  10.2% | Epoch 61/600 | loss=0.024560(smooth=0.025062), val=0.025082(smooth=0.024242) | trend=stable | ETA=577s
+  [model] ███░░░░░░░░░░░░░░░░░  15.2% | Epoch 91/600 | loss=0.024498(smooth=0.024517), val=0.023220(smooth=0.024557) | trend=stable | ETA=544s
+    Ensemble model 4/11...
+  [model] █░░░░░░░░░░░░░░░░░░░   5.2% | Epoch 31/600 | loss=0.025639(smooth=0.026076), val=0.024618(smooth=0.027641) | trend=stable | ETA=598s
+  [model] ██░░░░░░░░░░░░░░░░░░  10.2% | Epoch 61/600 | loss=0.024583(smooth=0.024621), val=0.025328(smooth=0.025540) | trend=stable | ETA=566s
+    Ensemble model 5/11...
+  [model] █░░░░░░░░░░░░░░░░░░░   5.2% | Epoch 31/600 | loss=0.025710(smooth=0.025700), val=0.023724(smooth=0.025398) | trend=stable | ETA=602s
+  [model] ██░░░░░░░░░░░░░░░░░░  10.2% | Epoch 61/600 | loss=0.025570(smooth=0.025169), val=0.027271(smooth=0.025407) | trend=stable | ETA=569s
+  [model] ███░░░░░░░░░░░░░░░░░  15.2% | Epoch 91/600 | loss=0.025468(smooth=0.024617), val=0.022985(smooth=0.024110) | trend=stable | ETA=537s
+  [model] ████░░░░░░░░░░░░░░░░  20.2% | Epoch 121/600 | loss=0.024125(smooth=0.024200), val=0.024002(smooth=0.023782) | trend=stable | ETA=504s
+    Ensemble model 6/11...
+  [model] █░░░░░░░░░░░░░░░░░░░   5.2% | Epoch 31/600 | loss=0.025293(smooth=0.025676), val=0.023358(smooth=0.024465) | trend=stable | ETA=597s
+  [model] ██░░░░░░░░░░░░░░░░░░  10.2% | Epoch 61/600 | loss=0.025311(smooth=0.025097), val=0.023211(smooth=0.024743) | trend=stable | ETA=567s
+  [model] ███░░░░░░░░░░░░░░░░░  15.2% | Epoch 91/600 | loss=0.023934(smooth=0.024415), val=0.023093(smooth=0.023870) | trend=stable | ETA=535s
+  [model] ████░░░░░░░░░░░░░░░░  20.2% | Epoch 121/600 | loss=0.025211(smooth=0.024688), val=0.024607(smooth=0.024674) | trend=stable | ETA=504s
+    Ensemble model 7/11...
+  [model] █░░░░░░░░░░░░░░░░░░░   5.2% | Epoch 31/600 | loss=0.025623(smooth=0.026159), val=0.024441(smooth=0.025248) | trend=stable | ETA=600s
+  [model] ██░░░░░░░░░░░░░░░░░░  10.2% | Epoch 61/600 | loss=0.024964(smooth=0.024839), val=0.024706(smooth=0.024909) | trend=stable | ETA=567s
+  [model] ███░░░░░░░░░░░░░░░░░  15.2% | Epoch 91/600 | loss=0.024747(smooth=0.024714), val=0.024855(smooth=0.025483) | trend=stable | ETA=535s
+    Ensemble model 8/11...
+  [model] █░░░░░░░░░░░░░░░░░░░   5.2% | Epoch 31/600 | loss=0.025336(smooth=0.025707), val=0.031926(smooth=0.025702) | trend=stable | ETA=595s
+  [model] ██░░░░░░░░░░░░░░░░░░  10.2% | Epoch 61/600 | loss=0.025139(smooth=0.025093), val=0.023558(smooth=0.024942) | trend=stable | ETA=567s
+  [model] ███░░░░░░░░░░░░░░░░░  15.2% | Epoch 91/600 | loss=0.024849(smooth=0.024608), val=0.026540(smooth=0.024732) | trend=stable | ETA=538s
+    Ensemble model 9/11...
+  [model] █░░░░░░░░░░░░░░░░░░░   5.2% | Epoch 31/600 | loss=0.025713(smooth=0.025694), val=0.023283(smooth=0.025143) | trend=stable | ETA=605s
+  [model] ██░░░░░░░░░░░░░░░░░░  10.2% | Epoch 61/600 | loss=0.025003(smooth=0.024808), val=0.023871(smooth=0.024264) | trend=stable | ETA=571s
+    Ensemble model 10/11...
+  [model] █░░░░░░░░░░░░░░░░░░░   5.2% | Epoch 31/600 | loss=0.025660(smooth=0.026045), val=0.023934(smooth=0.026049) | trend=stable | ETA=604s
+  [model] ██░░░░░░░░░░░░░░░░░░  10.2% | Epoch 61/600 | loss=0.025877(smooth=0.024904), val=0.024491(smooth=0.025254) | trend=stable | ETA=568s
+    Ensemble model 11/11...
+  [model] █░░░░░░░░░░░░░░░░░░░   5.2% | Epoch 31/600 | loss=0.025630(smooth=0.026056), val=0.027892(smooth=0.025987) | trend=stable | ETA=600s
+  [model] ██░░░░░░░░░░░░░░░░░░  10.2% | Epoch 61/600 | loss=0.024451(smooth=0.024759), val=0.031113(smooth=0.024757) | trend=stable | ETA=570s
+  [model] ███░░░░░░░░░░░░░░░░░  15.2% | Epoch 91/600 | loss=0.024168(smooth=0.024215), val=0.023104(smooth=0.024508) | trend=stable | ETA=541s
+  [model] ████░░░░░░░░░░░░░░░░  20.2% | Epoch 121/600 | loss=0.026670(smooth=0.024287), val=0.023866(smooth=0.024023) | trend=stable | ETA=509s
+    Accuracy=0.9717, Precision=0.9146, Recall=0.9984, F1=0.9546 (threshold=0.30, ensemble of 11)
+  Collision training time: 1196.1s (19.9 min)
+
+Model results saved to: reports\model_training_results.json
+
+  --- Phase 3: Result Analysis ---
+
+  ✅ All metrics within acceptable thresholds!
+
+  Comparison with Best Known (Round 2):
+    ✅ motion: improved
+       r2_vs_best: ↑0.0033
+       mae_vs_best: ↓0.0124
+    ➡️ safety: comparable
+       f1_vs_best: ↑0.0007
+       prec_vs_best: ↓0.0002
+    ❌ quality: degraded
+       r2_vs_best: ↓0.0090
+       mae_vs_best: ↑1.0496
+    ❌ collision: degraded
+       f1_vs_best: ↓0.0045
+       prec_vs_best: ↓0.0138
+
+======================================================================
+  Round 3 Training Complete
+======================================================================
+  Total time: 18909.3s (315.2 min)
+
+  Final Results:
+    motion         : R²=0.9931
+    safety         : F1=0.9743 Prec=0.9590
+    quality        : R²=0.9835
+    collision      : F1=0.9546 Prec=0.9146

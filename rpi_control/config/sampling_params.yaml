@@ -1,0 +1,20 @@
+sampling_strategies:
+  grid:
+    spacing: 20  # mm between sampling points
+    pattern: "rectangular"
+  adaptive:
+    initial_spacing: 40
+    refinement_threshold: 0.8
+    max_iterations: 3
+  targeted:
+    approach_height: 50  # mm above target
+    retract_height: 100
+    grip_timeout: 3000  # ms
+
+vision:
+  min_confidence: 0.7
+  max_detection_distance: 300  # mm
+  color_thresholds:
+    red: [[0, 100, 50, 30, 255, 255]]
+    blue: [[100, 130, 50, 30, 255, 255]]
+    green: [[50, 80, 50, 30, 255, 255]]

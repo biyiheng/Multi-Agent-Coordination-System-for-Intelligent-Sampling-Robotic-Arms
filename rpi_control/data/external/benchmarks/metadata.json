@@ -1,0 +1,17 @@
+{
+  "total_samples": 5000,
+  "benchmarks": [
+    "amazon_picking_challenge_2017",
+    "nist_assembly_challenge",
+    "ipc_9850_pick_place",
+    "food_robotics_challenge_2023",
+    "lab_automation_benchmark"
+  ],
+  "sources": [
+    "Amazon Picking Challenge 2017",
+    "NIST Assembly Challenge",
+    "IPC-9850 Pick & Place Standard",
+    "Food Robotics Challenge 2023",
+    "Lab Automation Benchmark"
+  ]
+}

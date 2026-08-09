@@ -1,0 +1,169 @@
+# =============================================================================
+# 智能采样机械臂多智能体系统 - Docker Compose 编排
+# 使用方式:
+#   docker-compose up -d                              # 启动主控服务
+#   docker-compose --profile cloud up -d              # 启动含云端同步
+#   docker-compose --profile training run --rm model-trainer  # 标准训练
+#   docker-compose --profile loop run --rm loop-trainer       # 循环工程训练
+#   docker-compose --profile all up -d                # 启动所有服务
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # 主控服务：REST API + WebSocket + 多智能体编排
+  # ---------------------------------------------------------------------------
+  rpi-control:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: sampling-arm:${IMAGE_TAG:-latest}
+    container_name: sampling-arm-control
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "${API_PORT:-8000}:8000"   # REST API
+      - "${WS_PORT:-8001}:8001"    # WebSocket
+    volumes:
+      # 持久化数据（映射到 rpi_control 包内目录）
+      - ./data:/app/rpi_control/data
+      - ./logs:/app/rpi_control/logs
+      - ./images:/app/rpi_control/images
+      - ./reports:/app/rpi_control/reports
+      # 配置文件（只读）
+      - ./config:/app/rpi_control/config:ro
+      # 模型文件（只读）
+      - ./models:/app/rpi_control/models:ro
+    devices:
+      # STM32 硬件串口（Raspberry Pi GPIO14/15）
+      # Pi 3/4: /dev/serial0 or /dev/ttyAMA0
+      # Pi 5:    /dev/ttyAMA0 (GPIO 14/15)
+      - "/dev/serial0:/dev/serial0:rwm"
+      - "/dev/ttyAMA0:/dev/ttyAMA0:rwm"
+      # OpenMV USB-TTL 备用串口
+      - "/dev/ttyUSB0:/dev/ttyUSB0:rwm"
+      # GPIO 芯片（Raspberry Pi 5 使用 gpiochip4, Pi 4 使用 gpiochip0）
+      - "/dev/gpiomem:/dev/gpiomem:rwm"
+      - "/dev/gpiochip0:/dev/gpiochip0:rwm"
+      - "/dev/gpiochip4:/dev/gpiochip4:rwm"
+    environment:
+      - TZ=Asia/Shanghai
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - DOCKER_ENV=true
+      - STM32_PORT=${STM32_PORT:-/dev/serial0}
+      - STM32_BAUDRATE=${STM32_BAUDRATE:-115200}
+      - OPENMV_PORT=${OPENMV_PORT:-/dev/ttyUSB0}
+      - API_PORT=${API_PORT:-8000}
+      - WS_PORT=${WS_PORT:-8001}
+      - RPI_MODEL=${RPI_MODEL:-auto}
+      - RPI_MEMORY_MB=${RPI_MEMORY_MB:-512}
+    networks:
+      - sampling-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # 资源限制（Raspberry Pi 适配：降低内存占用）
+    deploy:
+      resources:
+        limits:
+          cpus: '${RPI_CPU_LIMIT:-1.5}'
+          memory: ${RPI_MEMORY_LIMIT:-512M}
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+
+  # ---------------------------------------------------------------------------
+  # 云端同步服务（可选）
+  # ---------------------------------------------------------------------------
+  cloud-sync:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: sampling-arm:${IMAGE_TAG:-latest}
+    container_name: sampling-arm-cloud-sync
+    restart: unless-stopped
+    command: python -c "
+import asyncio, time, logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('cloud-sync')
+logger.info('Cloud sync service started')
+async def sync():
+    while True:
+        logger.debug('Cloud sync tick')
+        await asyncio.sleep(60)
+asyncio.run(sync())
+"
+    volumes:
+      - ./data:/app/rpi_control/data
+      - ./config:/app/rpi_control/config:ro
+    environment:
+      - TZ=Asia/Shanghai
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - DOCKER_ENV=true
+    networks:
+      - sampling-network
+    depends_on:
+      rpi-control:
+        condition: service_healthy
+    profiles:
+      - cloud  # 默认不启动，使用 --profile cloud 启用
+
+  # ---------------------------------------------------------------------------
+  # 模型训练服务（可选，按需启动）
+  # ---------------------------------------------------------------------------
+  model-trainer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: sampling-arm:${IMAGE_TAG:-latest}
+    container_name: sampling-arm-trainer
+    command: python -m training.run_training --rounds 1
+    volumes:
+      - ./data:/app/rpi_control/data
+      - ./models:/app/rpi_control/models
+      - ./reports:/app/rpi_control/reports
+      - ./config:/app/rpi_control/config:ro
+    environment:
+      - TZ=Asia/Shanghai
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    networks:
+      - sampling-network
+    profiles:
+      - training  # 默认不启动，使用 --profile training 启用
+
+  # ---------------------------------------------------------------------------
+  # 循环工程训练服务（可选，按需启动）
+  # ---------------------------------------------------------------------------
+  loop-trainer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: sampling-arm:${IMAGE_TAG:-latest}
+    container_name: sampling-arm-loop-trainer
+    command: python -m training.run_training --loop --loop-iterations ${LOOP_ITERATIONS:-10} --rounds 1
+    volumes:
+      - ./data:/app/rpi_control/data
+      - ./models:/app/rpi_control/models
+      - ./reports:/app/rpi_control/reports
+      - ./config:/app/rpi_control/config:ro
+    environment:
+      - TZ=Asia/Shanghai
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    networks:
+      - sampling-network
+    profiles:
+      - loop  # 默认不启动，使用 --profile loop 启用
+      - all
+
+networks:
+  sampling-network:
+    driver: bridge
+    name: sampling-arm-network

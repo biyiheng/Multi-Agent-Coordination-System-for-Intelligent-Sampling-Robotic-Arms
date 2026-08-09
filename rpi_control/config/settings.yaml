@@ -1,0 +1,155 @@
+system:
+  name: "智能采样机械臂系统"
+  version: "2.0.0"
+  log_level: "INFO"
+
+hardware:
+  stm32:
+    # 端口: Windows 使用 COM4, Linux/RPi 使用 /dev/serial0 或 /dev/ttyAMA0
+    port: "/dev/serial0"
+    baudrate: 115200
+    timeout: 0.5
+  openmv:
+    # 端口: Windows 使用 COM5, Linux/RPi 使用 /dev/ttyUSB0
+    port: "/dev/ttyUSB0"
+    baudrate: 115200
+    timeout: 1.0
+
+web:
+  host: "0.0.0.0"
+  port: 8000
+  ws_port: 8001
+  cors_origins: ["*"]
+
+cloud:
+  enabled: false  # 默认关闭云端同步，生产环境根据需要启用
+  api_url: "https://api.example.com"
+  sync_interval: 60
+
+database:
+  url: "sqlite:///./data/sampling.db"
+
+# =============================================================================
+# 视觉引导抓取 (Grasp Pipeline)
+# =============================================================================
+grasp:
+  enabled: true
+  # simulation: 无硬件, 用仿真运动驱动 + 脚本力谱验证完整流程
+  # real:       真实机械臂, 通过 ServoController 驱动
+  mode: "simulation"
+  camera_matrix: [[320.0, 0, 160.0], [0, 320.0, 120.0], [0, 0, 1.0]]
+  # 相机 -> 机器人基座 (手眼标定), 平移单位 mm
+  hand_eye_rotation: [[1, 0, 0], [0, -1, 0], [0, 0, -1]]
+  hand_eye_translation: [-100.0, -200.0, 50.0]
+  object_name: "obj"
+  object_size_mm: 60.0
+  # 物体真实位置 (机器人基座, mm) —— 仿真模式下用于生成合成图像点
+  object_pose_mm: [-100.0, -200.0, -160.0]
+  approach_offset_mm: 50.0
+  grasp_offset_mm: 10.0
+  # 放置位姿 [x,y,z,roll,pitch,yaw] (mm, rad)
+  place_pose: [-50.0, 50.0, -50.0, 0.0, 3.141592653589793, 0.0]
+  gripper:
+    max_force_n: 30.0
+    min_force_n: 1.0
+  # 标定文件 (JSON/YAML), 留空则使用上述手眼参数
+  calibration_file: ""
+
+safety:
+  max_joint_velocity: 500  # PWM units per second
+  emergency_stop_timeout: 100  # ms
+  watchdog_interval: 50  # ms
+
+# =============================================================================
+# Loop Engineering: 循环工程评估与优化框架
+# =============================================================================
+# 采用 Loop Engineering 方法论：提出变更 → 训练/执行 → 评估 → 保留好的改进
+# 通过低成本的持续试错，在自动化闭环中逼近最优解
+loop_engineering:
+  # 是否启用循环工程框架
+  enabled: true
+
+  # 性能分析器 (Profiler)
+  profiler:
+    enabled: true
+    # 慢操作阈值 (ms)，超过此值的操作会被标记
+    slow_threshold_ms: 100
+    # 瓶颈报告返回的 Top N 慢操作
+    bottleneck_top_n: 5
+
+  # 交互追踪器 (Interaction Tracker)
+  interaction_tracker:
+    enabled: true
+    # 冗余调用阈值：同一签名被调用超过此次数标记为冗余
+    redundancy_threshold: 3
+    # 高上下文大小阈值：超过此值建议压缩
+    context_size_warning: 20
+
+  # 多维度评估器 (Evaluator)
+  evaluator:
+    enabled: true
+    # 评估维度权重 (7维评估体系)
+    weights:
+      latency: 0.15        # 端到端延迟
+      reliability: 0.20    # 任务成功率
+      quality: 0.15        # 输出质量
+      efficiency: 0.15     # 交互效率
+      robustness: 0.15     # 鲁棒性
+      context_health: 0.10 # 上下文健康度
+      reusability: 0.10    # 技能复用性
+    # 评估报告输出目录
+    report_dir: "loop_engineering/reports"
+
+  # 上下文管理器 (Context Manager)
+  context_manager:
+    enabled: true
+    # 上下文最大历史记录数
+    max_history: 100
+    # 压缩阈值：消息数超过此值时触发压缩
+    compression_threshold: 50
+    # 上下文衰减检测窗口大小
+    decay_window: 20
+    # 状态持久化路径
+    state_persistence_dir: "loop_engineering/state"
+
+  # 技能提取器 (Skill Extractor)
+  skill_extractor:
+    enabled: true
+    # 最小技能复用次数阈值
+    min_reuse_threshold: 2
+    # 技能相似度阈值
+    similarity_threshold: 0.7
+    # 技能库存储路径
+    skill_library_path: "loop_engineering/skills/library.json"
+
+  # 知识继承器 (Knowledge Inheritor)
+  knowledge_inheritor:
+    enabled: true
+    # 版本族谱存储路径
+    lineage_path: "loop_engineering/knowledge/lineage.json"
+    # 核心记忆保留比例
+    core_memory_retention: 0.8
+    # 失效知识淘汰阈值
+    decay_threshold: 0.3
+
+  # 元优化器 (Meta-Optimizer)
+  meta_optimizer:
+    enabled: true
+    # 元技能存储路径
+    meta_skill_path: "loop_engineering/meta/skills.json"
+    # 演化策略历史记录数
+    strategy_history_size: 50
+    # 最小改进阈值：改进低于此值不纳入元技能
+    min_improvement_threshold: 0.05
+
+  # 闭环运行器 (Loop Runner)
+  loop_runner:
+    enabled: true
+    # 最大循环迭代次数
+    max_iterations: 10
+    # 收敛阈值：连续改进低于此值视为收敛
+    convergence_threshold: 0.01
+    # 收敛所需连续次数
+    convergence_patience: 3
+    # 循环间最小间隔 (秒)
+    min_loop_interval: 1.0

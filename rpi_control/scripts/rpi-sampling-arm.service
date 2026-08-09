@@ -1,0 +1,54 @@
+[Unit]
+Description=Intelligent Sampling Robotic Arm System
+Documentation=https://github.com/sampling-arm
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=sampling
+Group=sampling
+WorkingDirectory=/opt/sampling-arm/rpi_control
+Environment=PYTHONPATH=/opt/sampling-arm
+Environment=PYTHONUNBUFFERED=1
+Environment=TZ=Asia/Shanghai
+Environment=LOG_LEVEL=INFO
+EnvironmentFile=/opt/sampling-arm/rpi_control/.env
+ExecStart=/opt/sampling-arm/rpi_control/venv/bin/python -m rpi_control.main
+ExecStop=/bin/kill -s SIGTERM $MAINPID
+Restart=on-failure
+RestartSec=10
+StartLimitInterval=300
+StartLimitBurst=5
+
+# 安全加固
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/opt/sampling-arm/rpi_control/data
+ReadWritePaths=/opt/sampling-arm/rpi_control/logs
+ReadWritePaths=/opt/sampling-arm/rpi_control/images
+ReadWritePaths=/opt/sampling-arm/rpi_control/reports
+ReadOnlyPaths=/opt/sampling-arm/rpi_control/config
+ReadOnlyPaths=/opt/sampling-arm/rpi_control/models
+DeviceAllow=/dev/serial0 rw
+DeviceAllow=/dev/ttyAMA0 rw
+DeviceAllow=/dev/ttyUSB0 rw
+DeviceAllow=/dev/gpiomem rw
+DeviceAllow=/dev/gpiochip0 rw
+DeviceAllow=/dev/gpiochip4 rw
+DeviceAllow=/dev/i2c-1 rw
+
+# 资源限制
+MemoryHigh=512M
+MemoryMax=768M
+CPUQuota=150%
+
+# 日志
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=rpi-sampling-arm
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,79 @@
+name: CSharp Hardware CI
+
+on:
+  push:
+    branches: [main, master]
+    paths: ["hardware_debug_cs/**", "**/*.cs", "**/*.csproj", "!.github/**"]
+  pull_request:
+    branches: [main, master]
+    paths: ["hardware_debug_cs/**", "**/*.cs", "**/*.csproj", "!.github/**"]
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    name: Build + Unit Tests (C#)
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: hardware_debug_cs/HardwareDebug
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build (Release)
+        run: dotnet build -c Release --no-restore
+
+      - name: Run unit tests (self-test mode)
+        # CoordinateTests.Run 返回非 0 表示有失败 -> 使 CI 失败
+        run: dotnet run -c Release --no-build -- test
+
+      - name: Smoke test - multi-hardware chain
+        run: dotnet run -c Release --no-build -- chain
+
+      - name: Smoke test - board debug
+        run: dotnet run -c Release --no-build -- board
+
+  e2e-report:
+    name: End-to-end merged report (Python + C#)
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python deps
+        run: |
+          pip install numpy
+          pip install -r rpi_control/requirements.txt 2>/dev/null || true
+
+      - name: Build C# project
+        run: dotnet build -c Release hardware_debug_cs/HardwareDebug/HardwareDebug.csproj
+
+      - name: Generate merged end-to-end report
+        run: python _merge_e2e_report.py
+
+      - name: Upload report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report
+          path: |
+            rpi_control/reports/e2e_performance_report.md
+            e2e_merged_log.json

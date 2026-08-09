@@ -1,0 +1,43 @@
+# =============================================================================
+# 核心依赖（跨平台：x86_64 + arm64/Raspberry Pi）
+# =============================================================================
+pyserial>=3.5
+pyyaml>=6.0
+numpy>=1.24.0
+scipy>=1.10.0
+fastapi>=0.100.0
+uvicorn>=0.23.0
+websockets>=11.0
+sqlalchemy>=2.0.0
+pydantic>=2.0.0
+loguru>=0.7.0
+aiofiles>=23.0
+python-multipart>=0.0.6
+
+# =============================================================================
+# Raspberry Pi 硬件接口（条件安装：仅在 ARM 平台生效）
+# 注意：以下包在 x86_64 平台安装时会失败，请使用项目自带的
+#       rpi_compat.py 模块进行条件导入，或使用 Docker 部署
+# =============================================================================
+# 在 Raspberry Pi 上手动安装：
+#   pip install RPi.GPIO gpiozero smbus2
+# 或使用：
+#   python -c "from utils.rpi_compat import install_rpi_dependencies; install_rpi_dependencies()"
+RPi.GPIO>=0.7.1; platform_machine == 'aarch64' or platform_machine == 'armv7l'
+gpiozero>=2.0; platform_machine == 'aarch64' or platform_machine == 'armv7l'
+smbus2>=0.4.3; platform_machine == 'aarch64' or platform_machine == 'armv7l'
+
+# =============================================================================
+# 可选：推理加速（Raspberry Pi 专用，需手动安装）
+# =============================================================================
+# onnxruntime>=1.15.0      # ONNX 推理（pip install onnxruntime）
+# tflite-runtime>=2.13.0   # TensorFlow Lite（pip install tflite-runtime）
+
+# =============================================================================
+# 开发/测试工具（所有平台）
+# =============================================================================
+pytest>=7.0
+pytest-asyncio>=0.21
+pytest-cov>=4.0
+ruff>=0.3.0
+mypy>=1.8.0

@@ -1,0 +1,44 @@
+{
+  "run_id": "b3bbae93bc61",
+  "total_iterations": 3,
+  "converged": false,
+  "convergence_reason": "",
+  "initial_score": 0.6988,
+  "final_score": 0.7988,
+  "total_improvement": 0.1,
+  "total_duration_ms": 133288.87,
+  "best_iteration": 2,
+  "iterations": [
+    {
+      "iteration": 1,
+      "score": 0.6988,
+      "grade": "C+",
+      "kept": true,
+      "delta": 0.0,
+      "skills_extracted": 2,
+      "meta_skills_evolved": 1,
+      "duration_ms": 44680.77
+    },
+    {
+      "iteration": 2,
+      "score": 0.7988,
+      "grade": "B",
+      "kept": true,
+      "delta": 0.1,
+      "skills_extracted": 0,
+      "meta_skills_evolved": 0,
+      "duration_ms": 43979.59
+    },
+    {
+      "iteration": 3,
+      "score": 0.7988,
+      "grade": "B",
+      "kept": true,
+      "delta": 0.0,
+      "skills_extracted": 0,
+      "meta_skills_evolved": 0,
+      "duration_ms": 44628.44
+    }
+  ],
+  "recommendations": []
+}

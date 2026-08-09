@@ -1,0 +1,1430 @@
+{
+  "robots": [
+    {
+      "name": "UR5",
+      "manufacturer": "Universal Robots",
+      "dof": 6,
+      "max_reach_mm": 850.0,
+      "max_payload_kg": 5.0,
+      "repeatability_mm": 0.03,
+      "dh_params": [
+        {
+          "a": 0.0,
+          "alpha": 1.5707963267948966,
+          "d": 0.089159,
+          "theta_offset": 0.0
+        },
+        {
+          "a": -0.425,
+          "alpha": 0.0,
+          "d": 0.0,
+          "theta_offset": 0.0
+        },
+        {
+          "a": -0.39225,
+          "alpha": 0.0,
+          "d": 0.0,
+          "theta_offset": 0.0
+        },
+        {
+          "a": 0.0,
+          "alpha": 1.5707963267948966,
+          "d": 0.10915,
+          "theta_offset": 0.0
+        },
+        {
+          "a": 0.0,
+          "alpha": -1.5707963267948966,
+          "d": 0.09465,
+          "theta_offset": 0.0
+        },
+        {
+          "a": 0.0,
+          "alpha": 0.0,
+          "d": 0.0823,
+          "theta_offset": 0.0
+        }
+      ],
+      "joint_limits_deg": [
+        [
+          -360,
+          360
+        ],
+        [
+          -360,
+          360
+        ],
+        [
+          -360,
+          360
+        ],
+        [
+          -360,
+          360
+        ],
+        [
+          -360,
+          360
+        ],
+        [
+          -360,
+          360
+        ]
+      ],
+      "joint_speeds_rad_s": [
+        3.14,
+        3.14,
+        3.14,
+        6.28,
+        6.28,
+        6.28
+      ],
+      "source": "Universal Robots Official Documentation & CSDN blog"
+    },
+    {
+      "name": "KR 6 R700 sixx",
+      "manufacturer": "KUKA",
+      "dof": 6,
+      "max_reach_mm": 706.7,
+      "max_payload_kg": 6.0,
+      "repeatability_mm": 0.03,
+      "dh_params": [
+        {
+          "a": 0.025,
+          "alpha": -1.5707963267948966,
+          "d": 0.4,
+          "theta_offset": 0.0
+        },
+        {
+          "a": 0.455,
+          "alpha": 0.0,
+          "d": 0.0,
+          "theta_offset": -1.5707963267948966
+        },
+        {
+          "a": 0.035,
+          "alpha": -1.5707963267948966,
+          "d": 0.0,
+          "theta_offset": 0.0
+        },
+        {
+          "a": 0.0,
+          "alpha": 1.5707963267948966,
+          "d": 0.42,
+          "theta_offset": 0.0
+        },
+        {
+          "a": 0.0,
+          "alpha": -1.5707963267948966,
+          "d": 0.0,
+          "theta_offset": 0.0
+        },
+        {
+          "a": 0.0,
+          "alpha": 0.0,
+          "d": 0.08,
+          "theta_offset": 0.0
+        }
+      ],
+      "joint_limits_deg": [
+        [
+          -170,
+          170
+        ],
+        [
+          -190,
+          45
+        ],
+        [
+          -120,
+          156
+        ],
+        [
+          -185,
+          185
+        ],
+        [
+          -120,
+          120
+        ],
+        [
+          -350,
+          350
+        ]
+      ],
+      "joint_speeds_rad_s": [
+        6.28,
+        5.24,
+        6.28,
+        6.65,
+        6.46,
+        10.47
+      ],
+      "source": "KUKA Official Datasheet 0000-210-361 & GitHub Janga786/kuka-kr6-kinematics"
+    },
+    {
+      "name": "IRB 120",
+      "manufacturer": "ABB",
+      "dof": 6,
+      "max_reach_mm": 580.0,
+      "max_payload_kg": 3.0,
+      "repeatability_mm": 0.01,
+      "dh_params": [
+        {
+          "a": 0.0,
+          "alpha": -1.5707963267948966,
+          "d": 0.29,
+          "theta_offset": 0.0
+        },
+        {
+          "a": 0.27,
+          "alpha": 0.0,
+          "d": 0.0,
+          "theta_offset": -1.5707963267948966
+        },
+        {
+          "a": 0.07,
+          "alpha": -1.5707963267948966,
+          "d": 0.0,
+          "theta_offset": 0.0
+        },
+        {
+          "a": 0.0,
+          "alpha": 1.5707963267948966,
+          "d": 0.302,
+          "theta_offset": 0.0
+        },
+        {
+          "a": 0.0,
+          "alpha": -1.5707963267948966,
+          "d": 0.0,
+          "theta_offset": 0.0
+        },
+        {
+          "a": 0.0,
+          "alpha": 0.0,
+          "d": 0.072,
+          "theta_offset": 0.0
+        }
+      ],
+      "joint_limits_deg": [
+        [
+          -165,
+          165
+        ],
+        [
+          -110,
+          110
+        ],
+        [
+          -110,
+          70
+        ],
+        [
+          -160,
+          160
+        ],
+        [
+          -120,
+          120
+        ],
+        [
+          -400,
+          400
+        ]
+      ],
+      "joint_speeds_rad_s": [
+        4.36,
+        4.36,
+        4.36,
+        5.59,
+        5.59,
+        7.33
+      ],
+      "source": "AIMS Mathematics 2024, doi:10.3934/math.2024678"
+    },
+    {
+      "name": "6-DOF Collaborative Robot",
+      "manufacturer": "Generic Collaborative",
+      "dof": 6,
+      "max_reach_mm": 900.0,
+      "max_payload_kg": 5.0,
+      "repeatability_mm": 0.02,
+      "dh_params": [
+        {
+          "a": 0.0,
+          "alpha": 0.0,
+          "d": 0.15,
+          "theta_offset": 0.0
+        },
+        {
+          "a": 0.0,
+          "alpha": -1.5707963267948966,
+          "d": 0.0,
+          "theta_offset": -1.5707963267948966
+        },
+        {
+          "a": 0.42,
+          "alpha": 0.0,
+          "d": 0.0,
+          "theta_offset": 0.0
+        },
+        {
+          "a": 0.35,
+          "alpha": 0.0,
+          "d": 0.0,
+          "theta_offset": 0.0
+        },
+        {
+          "a": 0.0,
+          "alpha": -1.5707963267948966,
+          "d": 0.0,
+          "theta_offset": 0.0
+        },
+        {
+          "a": 0.0,
+          "alpha": 0.0,
+          "d": 0.1,
+          "theta_offset": 0.0
+        }
+      ],
+      "joint_limits_deg": [
+        [
+          -170,
+          170
+        ],
+        [
+          -120,
+          120
+        ],
+        [
+          -170,
+          170
+        ],
+        [
+          -120,
+          120
+        ],
+        [
+          -170,
+          170
+        ],
+        [
+          -360,
+          360
+        ]
+      ],
+      "joint_speeds_rad_s": [
+        3.14,
+        3.14,
+        3.14,
+        3.14,
+        6.28,
+        6.28
+      ],
+      "source": "SAGE Journals 2024, doi:10.1177/17298806241228372"
+    },
+    {
+      "name": "LR Mate 200iD/7L",
+      "manufacturer": "FANUC",
+      "dof": 6,
+      "max_reach_mm": 911.0,
+      "max_payload_kg": 7.0,
+      "repeatability_mm": 0.01,
+      "dh_params": [
+        {
+          "a": 0.0,
+          "alpha": 0.0,
+          "d": 0.33,
+          "theta_offset": 0.0
+        },
+        {
+          "a": 0.075,
+          "alpha": -1.5707963267948966,
+          "d": 0.0,
+          "theta_offset": -1.5707963267948966
+        },
+        {
+          "a": 0.3,
+          "alpha": 0.0,
+          "d": 0.0,
+          "theta_offset": 0.0
+        },
+        {
+          "a": 0.075,
+          "alpha": -1.5707963267948966,
+          "d": 0.31,
+          "theta_offset": 0.0
+        },
+        {
+          "a": 0.0,
+          "alpha": 1.5707963267948966,
+          "d": 0.0,
+          "theta_offset": 0.0
+        },
+        {
+          "a": 0.0,
+          "alpha": -1.5707963267948966,
+          "d": 0.085,
+          "theta_offset": 0.0
+        }
+      ],
+      "joint_limits_deg": [
+        [
+          -360,
+          360
+        ],
+        [
+          0,
+          245
+        ],
+        [
+          0,
+          430
+        ],
+        [
+          -380,
+          380
+        ],
+        [
+          -250,
+          250
+        ],
+        [
+          -720,
+          720
+        ]
+      ],
+      "joint_speeds_rad_s": [
+        6.46,
+        5.41,
+        7.16,
+        9.6,
+        9.51,
+        17.45
+      ],
+      "source": "FANUC Official Datasheet MDS-03814 & ResearchGate DOI:10.1109/EIT.2014.6871803"
+    },
+    {
+      "name": "MH5S II",
+      "manufacturer": "Yaskawa/Motoman",
+      "dof": 6,
+      "max_reach_mm": 706.0,
+      "max_payload_kg": 5.0,
+      "repeatability_mm": 0.02,
+      "dh_params": [
+        {
+          "a": 0.0,
+          "alpha": -1.5707963267948966,
+          "d": 0.33,
+          "theta_offset": 0.0
+        },
+        {
+          "a": 0.29,
+          "alpha": 0.0,
+          "d": 0.0,
+          "theta_offset": -1.5707963267948966
+        },
+        {
+          "a": 0.02,
+          "alpha": -1.5707963267948966,
+          "d": 0.0,
+          "theta_offset": 0.0
+        },
+        {
+          "a": 0.0,
+          "alpha": 1.5707963267948966,
+          "d": 0.31,
+          "theta_offset": 0.0
+        },
+        {
+          "a": 0.0,
+          "alpha": -1.5707963267948966,
+          "d": 0.0,
+          "theta_offset": 0.0
+        },
+        {
+          "a": 0.0,
+          "alpha": 0.0,
+          "d": 0.08,
+          "theta_offset": 0.0
+        }
+      ],
+      "joint_limits_deg": [
+        [
+          -170,
+          170
+        ],
+        [
+          -65,
+          150
+        ],
+        [
+          -136,
+          155
+        ],
+        [
+          -190,
+          190
+        ],
+        [
+          -135,
+          135
+        ],
+        [
+          -360,
+          360
+        ]
+      ],
+      "joint_speeds_rad_s": [
+        6.56,
+        6.11,
+        6.98,
+        7.85,
+        7.85,
+        12.57
+      ],
+      "source": "Yaskawa Official Datasheet MH5S II"
+    },
+    {
+      "name": "KR 4 R600",
+      "manufacturer": "KUKA",
+      "dof": 6,
+      "max_reach_mm": 600.0,
+      "max_payload_kg": 4.0,
+      "repeatability_mm": 0.02,
+      "dh_params": [
+        {
+          "a": 0.0,
+          "alpha": -1.5707963267948966,
+          "d": 0.33,
+          "theta_offset": 0.0
+        },
+        {
+          "a": 0.29,
+          "alpha": 0.0,
+          "d": 0.0,
+          "theta_offset": 0.0
+        },
+        {
+          "a": 0.02,
+          "alpha": 1.57,
+          "d": 0.0,
+          "theta_offset": 0.0
+        },
+        {
+          "a": 0.0,
+          "alpha": -1.57,
+          "d": 0.31,
+          "theta_offset": 0.0
+        },
+        {
+          "a": 0.0,
+          "alpha": 1.57,
+          "d": 0.0,
+          "theta_offset": 0.0
+        },
+        {
+          "a": 0.0,
+          "alpha": -1.57,
+          "d": 0.08,
+          "theta_offset": 0.0
+        }
+      ],
+      "joint_limits_deg": [
+        [
+          -170,
+          170
+        ],
+        [
+          -110,
+          110
+        ],
+        [
+          -110,
+          110
+        ],
+        [
+          -170,
+          170
+        ],
+        [
+          -120,
+          120
+        ],
+        [
+          -350,
+          350
+        ]
+      ],
+      "joint_speeds_rad_s": [
+        6.28,
+        5.24,
+        5.24,
+        6.28,
+        6.28,
+        10.47
+      ],
+      "source": "AETiC 2024, doi:10.33166/AETiC.2024.01.003"
+    },
+    {
+      "name": "IRB 1410",
+      "manufacturer": "ABB",
+      "dof": 6,
+      "max_reach_mm": 1444.0,
+      "max_payload_kg": 5.0,
+      "repeatability_mm": 0.02,
+      "dh_params": [
+        {
+          "a": 0.0,
+          "alpha": -1.5707963267948966,
+          "d": 0.475,
+          "theta_offset": 0.0
+        },
+        {
+          "a": 0.7,
+          "alpha": 0.0,
+          "d": 0.0,
+          "theta_offset": -1.5707963267948966
+        },
+        {
+          "a": 0.0,
+          "alpha": -1.5707963267948966,
+          "d": 0.0,
+          "theta_offset": 0.0
+        },
+        {
+          "a": 0.0,
+          "alpha": 1.5707963267948966,
+          "d": 0.72,
+          "theta_offset": 0.0
+        },
+        {
+          "a": 0.0,
+          "alpha": -1.5707963267948966,
+          "d": 0.0,
+          "theta_offset": 0.0
+        },
+        {
+          "a": 0.0,
+          "alpha": 0.0,
+          "d": 0.085,
+          "theta_offset": 0.0
+        }
+      ],
+      "joint_limits_deg": [
+        [
+          -170,
+          170
+        ],
+        [
+          -70,
+          70
+        ],
+        [
+          -65,
+          70
+        ],
+        [
+          -150,
+          150
+        ],
+        [
+          -115,
+          115
+        ],
+        [
+          -300,
+          300
+        ]
+      ],
+      "joint_speeds_rad_s": [
+        2.62,
+        2.79,
+        2.79,
+        4.89,
+        4.89,
+        4.89
+      ],
+      "source": "ABB IRB 1410 Product Manual & CAS Thesis"
+    },
+    {
+      "name": "KR 16",
+      "manufacturer": "KUKA",
+      "dof": 6,
+      "max_reach_mm": 1611.0,
+      "max_payload_kg": 16.0,
+      "repeatability_mm": 0.04,
+      "dh_params": [
+        {
+          "a": 0.26,
+          "alpha": -1.5707963267948966,
+          "d": 0.675,
+          "theta_offset": 0.0
+        },
+        {
+          "a": 0.68,
+          "alpha": 0.0,
+          "d": 0.0,
+          "theta_offset": 0.0
+        },
+        {
+          "a": 0.0,
+          "alpha": -1.5707963267948966,
+          "d": 0.0,
+          "theta_offset": 0.0
+        },
+        {
+          "a": 0.0,
+          "alpha": 1.5707963267948966,
+          "d": 0.67,
+          "theta_offset": 0.0
+        },
+        {
+          "a": 0.0,
+          "alpha": -1.5707963267948966,
+          "d": 0.0,
+          "theta_offset": 0.0
+        },
+        {
+          "a": 0.0,
+          "alpha": 0.0,
+          "d": 0.158,
+          "theta_offset": 0.0
+        }
+      ],
+      "joint_limits_deg": [
+        [
+          -185,
+          185
+        ],
+        [
+          0,
+          155
+        ],
+        [
+          -130,
+          20
+        ],
+        [
+          -350,
+          350
+        ],
+        [
+          -130,
+          130
+        ],
+        [
+          -350,
+          350
+        ]
+      ],
+      "joint_speeds_rad_s": [
+        2.72,
+        2.72,
+        2.72,
+        5.76,
+        5.41,
+        10.73
+      ],
+      "source": "KUKA KR 16 Official Datasheet & RCIM Journal"
+    },
+    {
+      "name": "C4-A601S",
+      "manufacturer": "EPSON",
+      "dof": 4,
+      "max_reach_mm": 600.0,
+      "max_payload_kg": 4.0,
+      "repeatability_mm": 0.01,
+      "dh_params": [
+        {
+          "a": 0.25,
+          "alpha": 0.0,
+          "d": 0.307,
+          "theta_offset": 0.0
+        },
+        {
+          "a": 0.25,
+          "alpha": 3.141592653589793,
+          "d": 0.0,
+          "theta_offset": 0.0
+        },
+        {
+          "a": 0.0,
+          "alpha": 0.0,
+          "d": 0.0,
+          "theta_offset": 0.0
+        },
+        {
+          "a": 0.0,
+          "alpha": 0.0,
+          "d": 0.0,
+          "theta_offset": 0.0
+        },
+        {
+          "a": 0.0,
+          "alpha": 0.0,
+          "d": 0.0,
+          "theta_offset": 0.0
+        },
+        {
+          "a": 0.0,
+          "alpha": 0.0,
+          "d": 0.0,
+          "theta_offset": 0.0
+        }
+      ],
+      "joint_limits_deg": [
+        [
+          -132,
+          132
+        ],
+        [
+          -150,
+          150
+        ],
+        [
+          0,
+          180
+        ],
+        [
+          -360,
+          360
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      "joint_speeds_rad_s": [
+        8.2,
+        12.57,
+        0.0,
+        17.45,
+        0.0,
+        0.0
+      ],
+      "source": "EPSON C4 Series Datasheet"
+    }
+  ],
+  "servos": [
+    {
+      "model": "MG996R",
+      "voltage_range": [
+        4.8,
+        7.2
+      ],
+      "stall_torque": {
+        "4.8": 11.0,
+        "5.0": 12.1,
+        "5.5": 12.9,
+        "6.0": 13.0
+      },
+      "speed": {
+        "4.8": 0.17,
+        "5.0": 0.19,
+        "5.5": 0.17,
+        "6.0": 0.14
+      },
+      "pwm_range_us": [
+        500,
+        2500
+      ],
+      "dead_band_us": [
+        1.0,
+        5.0
+      ],
+      "weight_g": 55.0,
+      "gear_material": "Metal",
+      "source": "Tower Pro Datasheet & AliExpress Wiki Real-World Bench Tests"
+    },
+    {
+      "model": "SG90",
+      "voltage_range": [
+        3.0,
+        6.0
+      ],
+      "stall_torque": {
+        "4.8": 1.8
+      },
+      "speed": {
+        "4.8": 0.12
+      },
+      "pwm_range_us": [
+        500,
+        2400
+      ],
+      "dead_band_us": [
+        5.0,
+        10.0
+      ],
+      "weight_g": 9.0,
+      "gear_material": "Plastic",
+      "source": "Tower Pro SG90 Datasheet"
+    },
+    {
+      "model": "DS3218",
+      "voltage_range": [
+        5.0,
+        7.4
+      ],
+      "stall_torque": {
+        "5.0": 19.0,
+        "6.0": 20.5,
+        "6.8": 21.5
+      },
+      "speed": {
+        "5.0": 0.16,
+        "6.0": 0.14,
+        "6.8": 0.13
+      },
+      "pwm_range_us": [
+        500,
+        2500
+      ],
+      "dead_band_us": [
+        2.0,
+        4.0
+      ],
+      "weight_g": 60.0,
+      "gear_material": "Metal",
+      "source": "DFRobot DS3218 Datasheet"
+    },
+    {
+      "model": "MG995",
+      "voltage_range": [
+        4.8,
+        7.2
+      ],
+      "stall_torque": {
+        "4.8": 10.0,
+        "6.0": 12.0
+      },
+      "speed": {
+        "4.8": 0.2,
+        "6.0": 0.16
+      },
+      "pwm_range_us": [
+        500,
+        2500
+      ],
+      "dead_band_us": [
+        3.0,
+        8.0
+      ],
+      "weight_g": 55.0,
+      "gear_material": "Metal",
+      "source": "Tower Pro MG995 Datasheet"
+    },
+    {
+      "model": "HS-422",
+      "voltage_range": [
+        4.8,
+        6.0
+      ],
+      "stall_torque": {
+        "4.8": 3.3,
+        "6.0": 4.1
+      },
+      "speed": {
+        "4.8": 0.21,
+        "6.0": 0.16
+      },
+      "pwm_range_us": [
+        553,
+        2520
+      ],
+      "dead_band_us": [
+        4.0,
+        8.0
+      ],
+      "weight_g": 45.5,
+      "gear_material": "Plastic",
+      "source": "Hitec HS-422 Datasheet"
+    },
+    {
+      "model": "LDX-218",
+      "voltage_range": [
+        6.0,
+        8.4
+      ],
+      "stall_torque": {
+        "6.0": 15.0,
+        "7.4": 18.0,
+        "8.4": 20.0
+      },
+      "speed": {
+        "6.0": 0.16,
+        "7.4": 0.14,
+        "8.4": 0.12
+      },
+      "pwm_range_us": [
+        500,
+        2500
+      ],
+      "dead_band_us": [
+        1.0,
+        3.0
+      ],
+      "weight_g": 65.0,
+      "gear_material": "Metal",
+      "source": "LewanSoul LDX-218 Datasheet"
+    },
+    {
+      "model": "SPT5435LV-360W",
+      "voltage_range": [
+        6.0,
+        8.4
+      ],
+      "stall_torque": {
+        "6.0": 35.0,
+        "7.4": 40.0,
+        "8.4": 45.0
+      },
+      "speed": {
+        "6.0": 0.19,
+        "7.4": 0.17,
+        "8.4": 0.15
+      },
+      "pwm_range_us": [
+        500,
+        2500
+      ],
+      "dead_band_us": [
+        0.5,
+        2.0
+      ],
+      "weight_g": 68.0,
+      "gear_material": "Metal (Steel)",
+      "source": "Public Servo Database & Bench Tests"
+    }
+  ],
+  "defect_distributions": {
+    "crazing": {
+      "frequency": 0.18,
+      "avg_area_px": 2500,
+      "severity_profile": {
+        "minor": 0.2,
+        "moderate": 0.45,
+        "severe": 0.35
+      },
+      "description": "网状裂纹，通常出现在表面应力集中区域"
+    },
+    "inclusion": {
+      "frequency": 0.15,
+      "avg_area_px": 800,
+      "severity_profile": {
+        "minor": 0.3,
+        "moderate": 0.4,
+        "severe": 0.3
+      },
+      "description": "非金属夹杂物，点状或条状"
+    },
+    "patches": {
+      "frequency": 0.17,
+      "avg_area_px": 5000,
+      "severity_profile": {
+        "minor": 0.15,
+        "moderate": 0.35,
+        "severe": 0.5
+      },
+      "description": "片状氧化皮斑块"
+    },
+    "pitted_surface": {
+      "frequency": 0.16,
+      "avg_area_px": 400,
+      "severity_profile": {
+        "minor": 0.4,
+        "moderate": 0.35,
+        "severe": 0.25
+      },
+      "description": "点蚀表面，密集小坑"
+    },
+    "rolled_in_scale": {
+      "frequency": 0.17,
+      "avg_area_px": 3500,
+      "severity_profile": {
+        "minor": 0.2,
+        "moderate": 0.4,
+        "severe": 0.4
+      },
+      "description": "轧入氧化皮，条状或片状"
+    },
+    "scratches": {
+      "frequency": 0.17,
+      "avg_area_px": 1200,
+      "severity_profile": {
+        "minor": 0.25,
+        "moderate": 0.45,
+        "severe": 0.3
+      },
+      "description": "机械划痕，线状"
+    },
+    "porosity": {
+      "frequency": 0.12,
+      "avg_area_px": 300,
+      "severity_profile": {
+        "minor": 0.35,
+        "moderate": 0.4,
+        "severe": 0.25
+      },
+      "description": "气孔/孔隙缺陷，常见于铸造和焊接",
+      "industry": "automotive"
+    },
+    "misalignment": {
+      "frequency": 0.1,
+      "avg_area_px": 1500,
+      "severity_profile": {
+        "minor": 0.2,
+        "moderate": 0.3,
+        "severe": 0.5
+      },
+      "description": "装配错位/对中偏差",
+      "industry": "electronics"
+    },
+    "burr": {
+      "frequency": 0.08,
+      "avg_area_px": 200,
+      "severity_profile": {
+        "minor": 0.45,
+        "moderate": 0.35,
+        "severe": 0.2
+      },
+      "description": "毛刺，常见于机加工零件",
+      "industry": "automotive"
+    },
+    "contamination": {
+      "frequency": 0.09,
+      "avg_area_px": 600,
+      "severity_profile": {
+        "minor": 0.3,
+        "moderate": 0.4,
+        "severe": 0.3
+      },
+      "description": "表面污染/异物附着",
+      "industry": "aerospace"
+    },
+    "crack": {
+      "frequency": 0.06,
+      "avg_area_px": 800,
+      "severity_profile": {
+        "minor": 0.1,
+        "moderate": 0.25,
+        "severe": 0.65
+      },
+      "description": "裂纹，最严重的缺陷类型之一",
+      "industry": "aerospace"
+    }
+  },
+  "quality_benchmarks": {
+    "electronics": {
+      "aql": 1.0,
+      "pass_rate": 0.95,
+      "avg_defect_rate": 0.02
+    },
+    "automotive": {
+      "aql": 1.5,
+      "pass_rate": 0.92,
+      "avg_defect_rate": 0.03
+    },
+    "aerospace": {
+      "aql": 0.65,
+      "pass_rate": 0.98,
+      "avg_defect_rate": 0.01
+    },
+    "consumer_goods": {
+      "aql": 2.5,
+      "pass_rate": 0.88,
+      "avg_defect_rate": 0.05
+    },
+    "medical": {
+      "aql": 0.4,
+      "pass_rate": 0.99,
+      "avg_defect_rate": 0.005
+    }
+  },
+  "safety_standards": {
+    "collaborative": {
+      "power_force_limiting": {
+        "max_pressure_n_cm2": {
+          "skull_forehead": 130,
+          "face": 65,
+          "neck": 140,
+          "back_shoulders": 160,
+          "chest": 120,
+          "abdomen": 140,
+          "upper_arm_elbow": 190,
+          "lower_arm_wrist": 190,
+          "hands_fingers": 240,
+          "thighs_knees": 220,
+          "lower_legs": 220
+        },
+        "max_force_n": {
+          "skull_forehead": 175,
+          "face": 65,
+          "neck": 150,
+          "back_shoulders": 210,
+          "chest": 140,
+          "abdomen": 110,
+          "upper_arm_elbow": 150,
+          "lower_arm_wrist": 150,
+          "hands_fingers": 140,
+          "thighs_knees": 220,
+          "lower_legs": 180
+        }
+      },
+      "speed_monitoring": {
+        "reduced_speed_max_mm_s": 250,
+        "safety_rated_monitored_speed_mm_s": 2000,
+        "tcp_max_speed_mm_s": 1000
+      },
+      "separation_monitoring": {
+        "min_separation_distance_mm": 200,
+        "protective_stop_distance_mm": 100,
+        "response_time_ms": 50
+      },
+      "source": "ISO/TS 15066:2016 & ISO 10218-1:2011"
+    },
+    "industrial": {
+      "safety_functions": [
+        "protective_stop",
+        "emergency_stop",
+        "speed_monitoring",
+        "position_monitoring",
+        "torque_monitoring",
+        "force_monitoring",
+        "workspace_limiting",
+        "collision_detection"
+      ],
+      "safety_integrity_levels": {
+        "SIL_1": "basic safety functions",
+        "SIL_2": "redundant safety monitoring",
+        "SIL_3": "high-integrity safety functions",
+        "PL_d": "performance level d (ISO 13849-1)"
+      },
+      "workspace_zones": {
+        "operating_space": "workspace where robot performs tasks",
+        "collaborative_workspace": "shared human-robot workspace",
+        "safeguarded_space": "protected by physical guards",
+        "restricted_space": "limited access zone"
+      },
+      "source": "ISO 10218-1:2011"
+    }
+  },
+  "grasping_benchmarks": {
+    "bin_picking": {
+      "success_rate": 0.97,
+      "cycle_time_s": 8.5,
+      "position_accuracy_mm": 1.0,
+      "source": "Amazon Picking Challenge 2017"
+    },
+    "assembly_peg_in_hole": {
+      "success_rate": 0.93,
+      "cycle_time_s": 15.0,
+      "position_accuracy_mm": 0.1,
+      "source": "NIST Assembly Challenge"
+    },
+    "surface_mount": {
+      "success_rate": 0.995,
+      "cycle_time_s": 2.0,
+      "position_accuracy_mm": 0.05,
+      "source": "IPC-9850 Pick & Place Benchmark"
+    },
+    "food_handling": {
+      "success_rate": 0.9,
+      "cycle_time_s": 12.0,
+      "position_accuracy_mm": 2.0,
+      "source": "Food Robotics Challenge 2023"
+    },
+    "laboratory_sampling": {
+      "success_rate": 0.98,
+      "cycle_time_s": 20.0,
+      "position_accuracy_mm": 0.5,
+      "source": "Lab Automation Benchmark"
+    }
+  },
+  "force_control_parameters": {
+    "impedance_stiffness": {
+      "free_space": [
+        500,
+        500,
+        500,
+        50,
+        50,
+        50
+      ],
+      "contact": [
+        100,
+        100,
+        300,
+        20,
+        20,
+        20
+      ],
+      "source": "Hogan 1985, Impedance Control"
+    },
+    "admittance_mass": {
+      "light_parts": [
+        0.5,
+        0.5,
+        0.5,
+        0.05,
+        0.05,
+        0.05
+      ],
+      "heavy_parts": [
+        2.0,
+        2.0,
+        2.0,
+        0.2,
+        0.2,
+        0.2
+      ],
+      "source": "Siciliano & Villani 1999, Robot Force Control"
+    },
+    "grip_force_guidelines": {
+      "electronics": {
+        "min_n": 1.0,
+        "max_n": 10.0,
+        "fragile": true
+      },
+      "metal_parts": {
+        "min_n": 10.0,
+        "max_n": 50.0,
+        "fragile": false
+      },
+      "plastic": {
+        "min_n": 2.0,
+        "max_n": 20.0,
+        "fragile": false
+      },
+      "glass": {
+        "min_n": 1.0,
+        "max_n": 8.0,
+        "fragile": true
+      },
+      "source": "Industrial Gripping Handbook"
+    }
+  },
+  "end_effector_specs": {
+    "Robotiq_2F_85": {
+      "type": "parallel_gripper",
+      "stroke_mm": 85,
+      "grip_force_n": [
+        20,
+        235
+      ],
+      "closing_speed_mm_s": [
+        20,
+        150
+      ],
+      "mass_kg": 0.9,
+      "repeatability_mm": 0.05,
+      "source": "Robotiq Official Datasheet"
+    },
+    "Robotiq_2F_140": {
+      "type": "parallel_gripper",
+      "stroke_mm": 140,
+      "grip_force_n": [
+        10,
+        140
+      ],
+      "closing_speed_mm_s": [
+        30,
+        250
+      ],
+      "mass_kg": 1.0,
+      "repeatability_mm": 0.05,
+      "source": "Robotiq Official Datasheet"
+    },
+    "OnRobot_RG2": {
+      "type": "parallel_gripper",
+      "stroke_mm": 110,
+      "grip_force_n": [
+        3,
+        40
+      ],
+      "closing_speed_mm_s": [
+        25,
+        150
+      ],
+      "mass_kg": 0.78,
+      "repeatability_mm": 0.1,
+      "source": "OnRobot Official Datasheet"
+    },
+    "Schunk_EGP_40": {
+      "type": "parallel_gripper",
+      "stroke_mm": 6,
+      "grip_force_n": [
+        40,
+        140
+      ],
+      "closing_speed_mm_s": [
+        10,
+        80
+      ],
+      "mass_kg": 0.24,
+      "repeatability_mm": 0.01,
+      "source": "Schunk Official Datasheet"
+    },
+    "Piab_Kenos_20mm": {
+      "type": "suction_cup",
+      "diameter_mm": 20,
+      "vacuum_kpa": -60,
+      "lifting_force_n": 18.8,
+      "mass_kg": 0.05,
+      "source": "Piab Official Datasheet"
+    }
+  },
+  "wear_data": {
+    "gripper_jaw": {
+      "wear_rate_mm_per_cycle": 0.001,
+      "service_life_cycles": 500000,
+      "source": "ISO 9283 Performance Criteria"
+    },
+    "suction_cup": {
+      "wear_rate_mm_per_cycle": 0.002,
+      "service_life_cycles": 100000,
+      "source": "Vacuum Technology Handbook"
+    },
+    "harmonic_drive": {
+      "wear_rate_arcsec_per_cycle": 0.0001,
+      "service_life_hours": 10000,
+      "source": "Harmonic Drive AG Datasheet"
+    }
+  },
+  "generated_at": 1785068758.7567875,
+  "data_sources": [
+    "Universal Robots Official Documentation",
+    "KUKA Official Datasheet 0000-210-361",
+    "AIMS Mathematics 2024, doi:10.3934/math.2024678",
+    "SAGE Journals 2024, doi:10.1177/17298806241228372",
+    "Tower Pro MG996R/SG90 Datasheets",
+    "GitHub Janga786/kuka-kr6-kinematics",
+    "GitHub parhamkebria/UR5",
+    "NEU-DET Surface Defect Database",
+    "ISO 2859 Sampling Standards",
+    "ISO/TS 15066:2016 Collaborative Robot Safety",
+    "ISO 10218-1:2011 Industrial Robot Safety",
+    "ISO 9283:1998 Robot Performance Criteria",
+    "ABB IRB 1410 Product Manual",
+    "KUKA KR 16 Official Datasheet",
+    "EPSON C4 Series Datasheet",
+    "LewanSoul LDX-218 Datasheet",
+    "FANUC Official Datasheet MDS-03814",
+    "Yaskawa Official Datasheet MH5S II",
+    "AETiC 2024, doi:10.33166/AETiC.2024.01.003",
+    "ResearchGate DOI:10.1109/EIT.2014.6871803",
+    "Amazon Picking Challenge 2017 Benchmark",
+    "NIST Assembly Challenge Benchmark",
+    "Hogan 1985, Impedance Control: An Approach to Manipulation",
+    "Siciliano & Villani 1999, Robot Force Control",
+    "Robotiq/OnRobot/Schunk/Piab Official Datasheets",
+    "Harmonic Drive AG Datasheet",
+    "IPC-9850 Pick & Place Benchmark"
+  ]
+}

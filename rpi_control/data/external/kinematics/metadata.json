@@ -1,0 +1,16 @@
+{
+  "num_robots": 8,
+  "total_samples": 16000,
+  "sources": [
+    "AIMS Mathematics 2024, doi:10.3934/math.2024678",
+    "SAGE Journals 2024, doi:10.1177/17298806241228372",
+    "AETiC 2024, doi:10.33166/AETiC.2024.01.003",
+    "ResearchGate DOI:10.1109/EIT.2014.6871803",
+    "Universal Robots Official Documentation",
+    "KUKA Official Datasheets",
+    "ABB Product Manuals",
+    "FANUC Official Datasheets",
+    "Yaskawa Official Datasheets",
+    "EPSON C4 Series Datasheet"
+  ]
+}
