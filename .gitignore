@@ -14,6 +14,49 @@ e2e_merged_log.json
 *.exe
 *.dll
 
+# 压力测试 / 训练 / 审计等运行时报告 (自动生成产物, 不入库)
+reports/
+
 # OS
 .DS_Store
 Thumbs.db
+
+# IDE / 编辑器
+.trae/
+.vscode/
+.idea/
+
+# 日志
+logs/
+*.log
+
+# 生成数据 / 模型 / 大体积二进制 (共约 7GB, 不应入库)
+data/
+models/
+canshu/
+
+# 根目录一次性调试/烧录/扫描/临时脚本
+debug_*.py
+flash_*.py
+scan_*.py
+_*.py
+try_bootloader.py
+verify_flash.py
+verify_firmware.py
+auto_flash.py
+quick_test_38400.py
+diagnose_comms.py
+read_rcc_regs.py
+reset_and_scan.py
+extract_pdf.py
+test_baud*.py
+test_comm.py
+test_dtr_rts.py
+test_firmware.py
+test_read_mem.py
+test_real_params.py
+test_screener.py
+test_simple.py
+test_step2*.py
+test_v2_full.py
+
