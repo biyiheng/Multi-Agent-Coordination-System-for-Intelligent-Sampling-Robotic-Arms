@@ -1,0 +1,11 @@
+{
+  "suite": "extreme_condition_stress",
+  "timestamp": "2026-08-10 18:39:26",
+  "results": {
+    "test_collision_escalates": "pass",
+    "test_heartbeat_loss_escalates": "pass",
+    "test_joint_limit_escalates": "pass",
+    "test_normal_no_estop": "pass"
+  },
+  "note": "含急停优先级/DANGER->ESTOP升级, CAN坏帧/丢包, 极端工况鲁棒性, 动态前馈数值鲁棒性"
+}
