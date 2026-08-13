@@ -1,0 +1,204 @@
+<div align="center">
+
+# 🤖 智能采样机械臂多智能体协同系统
+
+**Multi-Agent Coordination System for Intelligent Sampling Robotic Arms**
+
+一套面向工业自动化场景的六自由度采样机械臂综合控制平台 —— 融合多智能体编排、机器视觉、运动规划、力控抓取、实时安全防护与工业级固件。
+
+![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)
+![Platform](https://img.shields.io/badge/Platform-Raspberry%20Pi%2FJetson%2FLinux-important?style=flat-square)
+![CI](https://img.shields.io/badge/CI-GitHub%20Actions-brightgreen?style=flat-square)
+
+</div>
+
+---
+
+## 📌 项目简介
+
+本项目是一套运行于 **Raspberry Pi / Jetson / Linux** 的智能采样机械臂综合控制系统，通过 **STM32 微控制器** 驱动六路舵机，并集成 **OpenMV / Jetson 视觉模组** 实现目标检测与位姿估计。系统采用异步事件驱动架构，支持 Docker 容器化部署与 systemd 服务管理，具备从采样规划、运动控制、力控抓取、质量评估到安全防护与云同步的完整能力链路。
+
+- **核心价值**：多智能体协同决策 + 工业级实时安全约束 + 循环工程持续优化
+- **运行平台**：Raspberry Pi OS (64-bit) / Jetson / Linux / Windows（仿真模式）
+- **许可证**：MIT
+
+---
+
+## 🏗️ 系统架构
+
+系统由 **`Orchestrator`（编排器）** 统一调度五大专业智能体，形成感知 → 决策 → 执行 → 评估 → 防护的闭环：
+
+| 智能体 | 职责 |
+|--------|------|
+| **Sampling Agent** | 采样任务规划与执行策略生成 |
+| **Vision Agent** | 图像采集、目标检测与位姿估计 |
+| **Motion Agent** | 运动规划、轨迹生成与逆运动学求解（ML 热启动加速） |
+| **Quality Agent** | 抓取质量评估与任务完成度判定 |
+| **Safety Agent** | 实时安全监控、碰撞预警与紧急停止（ESTOP） |
+
+状态机覆盖 `IDLE → PLANNING → APPROACHING → DETECTING → GRASPING → LIFTING → INSPECTING → PLACING → EVALUATING → DONE` 等 12 种状态，并包含 `RECOVERY`（故障恢复）与 `ABORT`（紧急中止）两条异常处理路径。
+
+```
+┌────────────────────────────────────────────────────────────┐
+│                     Orchestrator (编排器)                    │
+│   Sampling ── Vision ── Motion ── Quality ── Safety         │
+└───────┬──────────────┬──────────────┬──────────┬───────────┘
+        ▼              ▼              ▼          ▼
+   Web/API        OpenMV/Jetson    STM32 舵机    实时安全
+   (FastAPI)      视觉模组         运动/力控      ESTOP/看门狗
+```
+
+---
+
+## ✨ 核心特性
+
+### 1. 多智能体协同编排
+LangGraph 启发的状态机设计，由 `Orchestrator` 统一调度，各 Agent 均经 `BaseAgent.run()` 执行，内置**约束护栏**（不可擅自决策 / 符合事实逻辑）。
+
+### 2. 工业级实时安全约束（工业级升级）
+- **急停优先级**：三级响应 `OK → DANGER → ESTOP`，DANGER 态（心跳丢失 / 关节越限 / 碰撞 / 双网丢失）**可靠升级为实际急停**，并输出具体触发原因日志
+- **坏帧处理**：CAN 通信层带 CRC32 校验与重传，篡改 / 非法帧被丢弃
+- **实时安全状态机**：通信超时、关节越限、工作区越界 → `PROTECTIVE_STOP`；硬件故障 → `FAULT`
+- **压力测试**：自动化极端工况脚本（急停触发 / CAN 丢包 / 数值鲁棒性 / 双网丢失），部署前一键验证
+
+### 3. 动力学前馈控制（工业级升级 S3）
+重力补偿 + 摩擦模型（库仑/粘滞/Stribeck）+ 可选惯量项，叠加在纯运动学轨迹之上，提升低速与变速精度；内置 NaN/Inf 极端工况防护与输出滤波。
+
+### 4. 力位混合控制与柔顺抓取
+基于 Hogan 阻抗控制与 Siciliano 力控框架：导纳控制 / 阻抗控制 / 力位混合控制 / 自适应夹持力、滑移检测 / 自动 TCP 标定。
+
+### 5. 运动学与轨迹规划
+正/逆运动学（Pieper + 多解排序）、数值雅可比 + SVD 阻尼伪逆、五次多项式 / S 曲线 / 梯形轨迹、蒙特卡洛工作空间分析。
+
+### 6. 循环工程（Loop Engineering）持续优化
+Profiler / Evaluator（七维）/ Context Manager / Skill Extractor / Knowledge Inheritor / Meta-Optimizer 自动化闭环优化。
+
+### 7. 视觉与抓取
+OpenMV / Jetson 视觉节点、Apriltag 检测、颜色与目标分类、质量检测、手眼标定、抓取管线。
+
+### 8. Web 远程控制 + 小程序
+FastAPI RESTful API + WebSocket 实时遥测 + Swagger UI（`/docs`）+ 微信小程序远程控制面板。
+
+---
+
+## 🧱 技术栈
+
+| 层 | 技术 |
+|----|------|
+| 控制端 | Python 3.11+ / FastAPI / WebSocket / SQLAlchemy / SQLite |
+| 部署 | Docker / docker-compose / systemd / `start_all.sh` |
+| 边缘视觉 | OpenMV (MicroPython) / NVIDIA Jetson (可选) |
+| 底层固件 | STM32F103C8T6（C / Makefile）+ STM32H7 驱动参考 |
+| 小程序 | 微信小程序（WXML / WXSS / JS） |
+| 机器学习 | numpy / scipy / scikit-learn（4 个 ML 模型） |
+| CI | GitHub Actions（C# 硬件调试 + 合并报告） |
+
+---
+
+## 📂 仓库结构
+
+```
+.
+├── rpi_control/            # Raspberry Pi 主控制系统
+│   ├── agents/             # 5 大智能体 + 编排器 + A2A 协议
+│   ├── motion/             # 运动学 / 轨迹 / 碰撞 / 力控 / 动力学前馈
+│   ├── safety/             # 实时安全状态机
+│   ├── vision/             # 视觉处理 / 标定 / 位姿估计
+│   ├── grasp/              # 抓取管线 / 运动驱动
+│   ├── sampling/           # 采样规划 / 策略
+│   ├── hardware/           # STM32 / 舵机 / OpenMV 通信抽象
+│   ├── web/                # FastAPI + WebSocket + 服务层
+│   ├── training/           # 模型训练管线 / 数据生成
+│   ├── loop_engineering/   # 循环工程优化框架
+│   ├── tests/              # 测试套件（含压力测试）
+│   ├── scripts/            # 标定 / 诊断 / 部署脚本
+│   ├── main.py             # 主入口
+│   ├── Dockerfile          # 镜像构建
+│   └── docker-compose.yml  # 容器编排
+├── stm32_firmware/         # STM32F103 固件 + STM32H7 驱动参考
+├── openmv_firmware/        # OpenMV 视觉固件 (MicroPython)
+├── mini_program/           # 微信小程序远程控制
+├── hardware_debug_cs/      # C# 板卡/链路调试 + CI
+├── 项目文档/               # 完整项目文档（01–16）
+├── start_all.sh            # 一键启动（含 --check / --stress / --ros2 / --jetson）
+└── README.md
+```
+
+---
+
+## 🚀 快速开始
+
+### 环境要求
+- **Python 3.11+**，Raspberry Pi OS (64-bit) / Ubuntu 22.04+ / Windows（仿真模式）
+- **硬件**：Raspberry Pi 4B/5、STM32F103、OpenMV Cam H7、6× 舵机（可选 Jetson）
+- **可选**：Docker 24.0+
+
+### 安装与测试
+```bash
+# 克隆并进入
+git clone https://github.com/biyiheng/Multi-Agent-Coordination-System-for-Intelligent-Sampling-Robotic-Arms.git
+cd Multi-Agent-Coordination-System-for-Intelligent-Sampling-Robotic-Arms
+
+# 安装依赖
+pip install -r rpi_control/requirements.txt
+
+# 运行测试（无需硬件，仿真模式）
+cd rpi_control && python -m pytest tests/ -q
+```
+
+### 一键启动（真实硬件 / Linux）
+```bash
+./start_all.sh --check     # 环境/模型/约束自检（不启动）
+./start_all.sh --stress    # 压力测试 + 生成报告（部署前验证）
+./start_all.sh             # 启动全部 5 个 Agent + 模型服务
+./start_all.sh --stop      # 停止服务
+# 工业级扩展
+./start_all.sh --ros2      # 以 ROS2 节点方式启动 Agent（若检测到 ROS2）
+./start_all.sh --jetson    # 额外启动 Jetson 视觉节点
+```
+
+### Docker 部署
+```bash
+docker compose -f rpi_control/docker-compose.yml up -d
+```
+
+---
+
+## 📚 文档索引
+
+`项目文档/` 下提供了完整文档（01–16）：
+
+| 编号 | 文档 | 编号 | 文档 |
+|------|------|------|------|
+| 01 | 项目结构文档 | 09 | 部署执行清单 |
+| 02 | 技术文档 | 10 | 工业级升级规划 |
+| 03 | 安全性文档 | 11 | 硬件采购清单 |
+| 04 | 部署文档 | 12 | 项目交付报告 |
+| 05 | 需求清单 | 13 | 压力测试方案 |
+| 06 | API 接口文档 | 14 | 真实硬件部署操作手册 |
+| 07 | 部署操作手册 | 15 | 现场工程师部署与验证操作手册 |
+| 08 | 验证报告 | 16 | 故障排查速查表 |
+
+---
+
+## 🧪 测试与质量
+
+- 覆盖：运动学、轨迹规划、碰撞检测、工作空间、力控、动力学前馈、API、安全扫描、性能基准、**极端工况压力测试**
+- 支持 `pytest`、`pytest-asyncio`、`pytest-cov`
+- 硬件仿真模式：无需物理硬件即可运行完整测试套件
+- 压力测试报告：`reports/stress_test_results.json`（由 `--stress` 自动生成）
+
+---
+
+## 🤝 贡献
+
+欢迎提交 Issue 与 Pull Request，请阅读 [CONTRIBUTING.md](CONTRIBUTING.md)。
+
+## 🔒 安全
+
+安全策略与漏洞上报方式见 [SECURITY.md](SECURITY.md)。
+
+## 📄 许可证
+
+[MIT](LICENSE) © 智能采样机械臂团队
