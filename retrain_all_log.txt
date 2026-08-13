@@ -1,0 +1,135 @@
+﻿============================================================
+  RETRAIN ALL (Round 11 data + coordinate fixes)
+============================================================
+
+  Training Motion (IK) Model (Round 9: fixed seed)...
+  [model] █░░░░░░░░░░░░░░░░░░░   5.5% | Epoch 11/200 | loss=0.139037(smooth=0.168036), val=0.087953(smooth=0.118775) | trend=initializing | ETA=2536s
+  [model] ██░░░░░░░░░░░░░░░░░░  10.5% | Epoch 21/200 | loss=0.115697(smooth=0.125004), val=0.068724(smooth=0.076118) | trend=improving | ETA=2396s
+  [model] ███░░░░░░░░░░░░░░░░░  15.5% | Epoch 31/200 | loss=0.103944(smooth=0.109014), val=0.052331(smooth=0.059052) | trend=improving | ETA=2265s
+  [model] ████░░░░░░░░░░░░░░░░  20.5% | Epoch 41/200 | loss=0.093125(smooth=0.098177), val=0.042110(smooth=0.049299) | trend=improving | ETA=2141s
+    Epoch 50/200: loss=0.088117, val_loss=0.038700, lr=0.000859
+  [model] █████░░░░░░░░░░░░░░░  25.5% | Epoch 51/200 | loss=0.087883(smooth=0.090493), val=0.038799(smooth=0.042385) | trend=improving | ETA=2014s
+  [model] ██████░░░░░░░░░░░░░░  30.5% | Epoch 61/200 | loss=0.082534(smooth=0.084401), val=0.034643(smooth=0.037256) | trend=improving | ETA=1883s
+  [model] ███████░░░░░░░░░░░░░  35.5% | Epoch 71/200 | loss=0.078753(smooth=0.080113), val=0.030377(smooth=0.033468) | trend=improving | ETA=1748s
+  [model] ████████░░░░░░░░░░░░  40.5% | Epoch 81/200 | loss=0.073717(smooth=0.075268), val=0.029884(smooth=0.029869) | trend=improving | ETA=1593s
+  [model] █████████░░░░░░░░░░░  45.5% | Epoch 91/200 | loss=0.071361(smooth=0.071628), val=0.028786(smooth=0.028529) | trend=stable | ETA=1462s
+    Epoch 100/200: loss=0.067053, val_loss=0.025330, lr=0.000508
+  [model] ██████████░░░░░░░░░░  50.5% | Epoch 101/200 | loss=0.067662(smooth=0.068965), val=0.025140(smooth=0.025910) | trend=stable | ETA=1331s
+  [model] ███████████░░░░░░░░░  55.5% | Epoch 111/200 | loss=0.065626(smooth=0.066135), val=0.022812(smooth=0.023781) | trend=stable | ETA=1198s
+  [model] ████████████░░░░░░░░  60.5% | Epoch 121/200 | loss=0.061372(smooth=0.063062), val=0.021347(smooth=0.022347) | trend=stable | ETA=1065s
+  [model] █████████████░░░░░░░  65.5% | Epoch 131/200 | loss=0.061715(smooth=0.061577), val=0.020136(smooth=0.020973) | trend=stable | ETA=931s
+  [model] ██████████████░░░░░░  70.5% | Epoch 141/200 | loss=0.059167(smooth=0.059841), val=0.018694(smooth=0.020129) | trend=stable | ETA=797s
+    Epoch 150/200: loss=0.058147, val_loss=0.018749, lr=0.000152
+  [model] ███████████████░░░░░  75.5% | Epoch 151/200 | loss=0.057706(smooth=0.058535), val=0.018655(smooth=0.019651) | trend=stable | ETA=662s
+  [model] ████████████████░░░░  80.5% | Epoch 161/200 | loss=0.057221(smooth=0.057354), val=0.019024(smooth=0.018993) | trend=stable | ETA=527s
+  [model] █████████████████░░░  85.5% | Epoch 171/200 | loss=0.056810(smooth=0.056023), val=0.017219(smooth=0.018637) | trend=stable | ETA=392s
+  [model] ██████████████████░░  90.5% | Epoch 181/200 | loss=0.054541(smooth=0.055573), val=0.017572(smooth=0.018110) | trend=stable | ETA=257s
+  [model] ███████████████████░  95.5% | Epoch 191/200 | loss=0.054591(smooth=0.054986), val=0.019132(smooth=0.017839) | trend=stable | ETA=122s
+    Epoch 200/200: loss=0.055372, val_loss=0.016990, lr=0.000000
+    R²=0.9832, MAE=0.1015 rad (5.8°)
+    Per-joint R²: ['0.986', '0.988', '0.982', '0.986', '0.978', '0.978']
+  [motion_ik] elapsed 2710.7s
+
+  Training Safety Model (Round 9: diverse boundary samples)...
+    Features: 19 (simplified from 27), samples: 111129
+  [model] █░░░░░░░░░░░░░░░░░░░   5.2% | Epoch 13/250 | loss=0.050053(smooth=0.053247), val=0.043185(smooth=0.045607) | trend=initializing | ETA=223s
+  [model] ██░░░░░░░░░░░░░░░░░░  10.0% | Epoch 25/250 | loss=0.047154(smooth=0.048308), val=0.041884(smooth=0.042519) | trend=improving | ETA=211s
+  [model] ██░░░░░░░░░░░░░░░░░░  14.8% | Epoch 37/250 | loss=0.046112(smooth=0.046452), val=0.040899(smooth=0.041411) | trend=stable | ETA=200s
+  [model] ███░░░░░░░░░░░░░░░░░  19.6% | Epoch 49/250 | loss=0.044873(smooth=0.045181), val=0.040751(smooth=0.040772) | trend=stable | ETA=188s
+    Epoch 50/250: loss=0.044550, val_loss=0.040066, lr=0.000908
+  [model] ████░░░░░░░░░░░░░░░░  24.4% | Epoch 61/250 | loss=0.044219(smooth=0.044239), val=0.039650(smooth=0.040112) | trend=stable | ETA=177s
+  [model] █████░░░░░░░░░░░░░░░  29.2% | Epoch 73/250 | loss=0.043196(smooth=0.043592), val=0.039095(smooth=0.039627) | trend=stable | ETA=166s
+  [model] ██████░░░░░░░░░░░░░░  34.0% | Epoch 85/250 | loss=0.042963(smooth=0.043078), val=0.039892(smooth=0.039398) | trend=stable | ETA=154s
+  [model] ███████░░░░░░░░░░░░░  38.8% | Epoch 97/250 | loss=0.042241(smooth=0.042491), val=0.039172(smooth=0.039050) | trend=stable | ETA=143s
+    Epoch 100/250: loss=0.042119, val_loss=0.039164, lr=0.000660
+  [model] ████████░░░░░░░░░░░░  43.6% | Epoch 109/250 | loss=0.042039(smooth=0.041962), val=0.038288(smooth=0.038976) | trend=stable | ETA=131s
+  [model] █████████░░░░░░░░░░░  48.4% | Epoch 121/250 | loss=0.041342(smooth=0.041621), val=0.038645(smooth=0.038587) | trend=stable | ETA=120s
+  [model] ██████████░░░░░░░░░░  53.2% | Epoch 133/250 | loss=0.041094(smooth=0.041237), val=0.038610(smooth=0.038597) | trend=stable | ETA=109s
+  [model] ███████████░░░░░░░░░  58.0% | Epoch 145/250 | loss=0.040613(smooth=0.041061), val=0.038343(smooth=0.038259) | trend=stable | ETA=98s
+    Epoch 150/250: loss=0.040641, val_loss=0.038086, lr=0.000351
+  [model] ████████████░░░░░░░░  62.8% | Epoch 157/250 | loss=0.040847(smooth=0.040735), val=0.038039(smooth=0.038073) | trend=stable | ETA=86s
+  [model] █████████████░░░░░░░  67.6% | Epoch 169/250 | loss=0.040256(smooth=0.040280), val=0.037638(smooth=0.037718) | trend=stable | ETA=75s
+  [model] ██████████████░░░░░░  72.4% | Epoch 181/250 | loss=0.039962(smooth=0.040082), val=0.037354(smooth=0.037563) | trend=stable | ETA=64s
+  [model] ███████████████░░░░░  77.2% | Epoch 193/250 | loss=0.039837(smooth=0.039824), val=0.037206(smooth=0.037408) | trend=stable | ETA=53s
+    Epoch 200/250: loss=0.039670, val_loss=0.037253, lr=0.000099
+  [model] ████████████████░░░░  82.0% | Epoch 205/250 | loss=0.039605(smooth=0.039619), val=0.037027(smooth=0.037208) | trend=stable | ETA=42s
+  [model] █████████████████░░░  86.8% | Epoch 217/250 | loss=0.039186(smooth=0.039459), val=0.037029(smooth=0.037201) | trend=stable | ETA=31s
+  [model] ██████████████████░░  91.6% | Epoch 229/250 | loss=0.039218(smooth=0.039287), val=0.037340(smooth=0.037129) | trend=stable | ETA=19s
+  [model] ███████████████████░  96.4% | Epoch 241/250 | loss=0.039410(smooth=0.039156), val=0.037249(smooth=0.037107) | trend=stable | ETA=8s
+    Epoch 250/250: loss=0.039360, val_loss=0.036983, lr=0.000000
+    Accuracy=0.9558, Precision=0.9551, Recall=0.9882, F1=0.9714 (threshold=0.55)
+  [safety] elapsed 233.1s
+
+  Training Quality Model (Round 9: deterministic mapping, verified)...
+    Features: 29, samples: 102516
+  [model] █░░░░░░░░░░░░░░░░░░░   5.3% | Epoch 16/300 | loss=0.003193(smooth=0.003496), val=0.001524(smooth=0.001904) | trend=initializing | ETA=595s
+  [model] ██░░░░░░░░░░░░░░░░░░  10.3% | Epoch 31/300 | loss=0.002747(smooth=0.002835), val=0.001522(smooth=0.001459) | trend=improving | ETA=563s
+  [model] ███░░░░░░░░░░░░░░░░░  15.3% | Epoch 46/300 | loss=0.002464(smooth=0.002505), val=0.001261(smooth=0.001318) | trend=improving | ETA=533s
+    Epoch 50/300: loss=0.002371, val_loss=0.001452, lr=0.000468
+  [model] ████░░░░░░░░░░░░░░░░  20.3% | Epoch 61/300 | loss=0.002281(smooth=0.002295), val=0.001244(smooth=0.001338) | trend=improving | ETA=502s
+  [model] █████░░░░░░░░░░░░░░░  25.3% | Epoch 76/300 | loss=0.002070(smooth=0.002092), val=0.001377(smooth=0.001223) | trend=improving | ETA=469s
+  [model] ██████░░░░░░░░░░░░░░  30.3% | Epoch 91/300 | loss=0.001924(smooth=0.001946), val=0.001240(smooth=0.001185) | trend=stable | ETA=438s
+    Epoch 100/300: loss=0.001825, val_loss=0.001222, lr=0.000377
+  [model] ███████░░░░░░░░░░░░░  35.3% | Epoch 106/300 | loss=0.001838(smooth=0.001828), val=0.001109(smooth=0.001127) | trend=stable | ETA=407s
+  [model] ████████░░░░░░░░░░░░  40.3% | Epoch 121/300 | loss=0.001714(smooth=0.001728), val=0.001086(smooth=0.001111) | trend=stable | ETA=376s
+  [model] █████████░░░░░░░░░░░  45.3% | Epoch 136/300 | loss=0.001641(smooth=0.001660), val=0.001054(smooth=0.001096) | trend=stable | ETA=345s
+    Epoch 150/300: loss=0.001584, val_loss=0.001041, lr=0.000253
+  [model] ██████████░░░░░░░░░░  50.3% | Epoch 151/300 | loss=0.001574(smooth=0.001585), val=0.001042(smooth=0.001068) | trend=stable | ETA=314s
+  [model] ███████████░░░░░░░░░  55.3% | Epoch 166/300 | loss=0.001515(smooth=0.001558), val=0.001129(smooth=0.001061) | trend=stable | ETA=282s
+  [model] ████████████░░░░░░░░  60.3% | Epoch 181/300 | loss=0.001516(smooth=0.001507), val=0.001011(smooth=0.001056) | trend=stable | ETA=251s
+  [model] █████████████░░░░░░░  65.3% | Epoch 196/300 | loss=0.001475(smooth=0.001486), val=0.001052(smooth=0.001048) | trend=stable | ETA=220s
+    Epoch 200/300: loss=0.001468, val_loss=0.001068, lr=0.000127
+  [model] ██████████████░░░░░░  70.3% | Epoch 211/300 | loss=0.001462(smooth=0.001467), val=0.001043(smooth=0.001036) | trend=stable | ETA=188s
+  [model] ███████████████░░░░░  75.3% | Epoch 226/300 | loss=0.001453(smooth=0.001456), val=0.001126(smooth=0.001041) | trend=stable | ETA=156s
+  [model] ████████████████░░░░  80.3% | Epoch 241/300 | loss=0.001462(smooth=0.001445), val=0.001024(smooth=0.001015) | trend=stable | ETA=125s
+    Epoch 250/300: loss=0.001481, val_loss=0.000999, lr=0.000035
+  [model] █████████████████░░░  85.3% | Epoch 256/300 | loss=0.001427(smooth=0.001430), val=0.001058(smooth=0.001019) | trend=stable | ETA=93s
+  [model] ██████████████████░░  90.3% | Epoch 271/300 | loss=0.001440(smooth=0.001421), val=0.001001(smooth=0.001014) | trend=stable | ETA=61s
+  [model] ███████████████████░  95.3% | Epoch 286/300 | loss=0.001436(smooth=0.001432), val=0.001011(smooth=0.001005) | trend=stable | ETA=30s
+    Epoch 300/300: loss=0.001427, val_loss=0.001010, lr=0.000000
+    R²=0.9914, MAE=2.57, RMSE=3.20, ClsAcc=0.9594 (single robust model)
+  [quality] elapsed 634.9s
+
+  Training Collision Detection Model (Round 9: 7-ensemble, diverse negatives)...
+    Features: 17, samples: 50000 (real=45000, synthetic=5000)
+    Labels: collision=1740, safe=48260 (3.5% collision)
+    Oversampled collision (train only): 1487 → 17577 (30.0% of train)
+    Ensemble model 1/5...
+  [model] █░░░░░░░░░░░░░░░░░░░   5.3% | Epoch 8/150 | loss=0.022592(smooth=0.029528), val=0.019952(smooth=0.020842) | trend=initializing | ETA=147s
+  [model] ██░░░░░░░░░░░░░░░░░░  10.0% | Epoch 15/150 | loss=0.021047(smooth=0.021916), val=0.023913(smooth=0.020769) | trend=initializing | ETA=139s
+  [model] ██░░░░░░░░░░░░░░░░░░  14.7% | Epoch 22/150 | loss=0.020441(smooth=0.020747), val=0.018451(smooth=0.020496) | trend=improving | ETA=133s
+  [model] ███░░░░░░░░░░░░░░░░░  19.3% | Epoch 29/150 | loss=0.019976(smooth=0.020130), val=0.017332(smooth=0.019330) | trend=stable | ETA=126s
+    Early stopping at epoch 35
+    Ensemble model 2/5...
+  [model] █░░░░░░░░░░░░░░░░░░░   5.3% | Epoch 8/150 | loss=0.022112(smooth=0.027226), val=0.019703(smooth=0.024246) | trend=initializing | ETA=146s
+  [model] ██░░░░░░░░░░░░░░░░░░  10.0% | Epoch 15/150 | loss=0.021110(smooth=0.021739), val=0.021244(smooth=0.022202) | trend=initializing | ETA=139s
+  [model] ██░░░░░░░░░░░░░░░░░░  14.7% | Epoch 22/150 | loss=0.020353(smooth=0.020763), val=0.019766(smooth=0.021273) | trend=improving | ETA=132s
+  [model] ███░░░░░░░░░░░░░░░░░  19.3% | Epoch 29/150 | loss=0.019998(smooth=0.020230), val=0.024060(smooth=0.021200) | trend=stable | ETA=124s
+  [model] ████░░░░░░░░░░░░░░░░  24.0% | Epoch 36/150 | loss=0.019729(smooth=0.019866), val=0.025211(smooth=0.020690) | trend=stable | ETA=117s
+  [model] █████░░░░░░░░░░░░░░░  28.7% | Epoch 43/150 | loss=0.019160(smooth=0.019644), val=0.023211(smooth=0.021003) | trend=stable | ETA=110s
+  [model] ██████░░░░░░░░░░░░░░  33.3% | Epoch 50/150 | loss=0.019306(smooth=0.019309), val=0.020605(smooth=0.019585) | trend=stable | ETA=103s
+    Ensemble model 3/5...
+  [model] █░░░░░░░░░░░░░░░░░░░   5.3% | Epoch 8/150 | loss=0.022021(smooth=0.028083), val=0.022725(smooth=0.022143) | trend=initializing | ETA=146s
+  [model] ██░░░░░░░░░░░░░░░░░░  10.0% | Epoch 15/150 | loss=0.021362(smooth=0.021945), val=0.021179(smooth=0.020739) | trend=initializing | ETA=138s
+  [model] ██░░░░░░░░░░░░░░░░░░  14.7% | Epoch 22/150 | loss=0.020564(smooth=0.020872), val=0.020271(smooth=0.020580) | trend=improving | ETA=130s
+  [model] ███░░░░░░░░░░░░░░░░░  19.3% | Epoch 29/150 | loss=0.020093(smooth=0.020308), val=0.019428(smooth=0.019348) | trend=stable | ETA=123s
+    Ensemble model 4/5...
+  [model] █░░░░░░░░░░░░░░░░░░░   5.3% | Epoch 8/150 | loss=0.021858(smooth=0.027438), val=0.014335(smooth=0.020638) | trend=initializing | ETA=145s
+  [model] ██░░░░░░░░░░░░░░░░░░  10.0% | Epoch 15/150 | loss=0.021045(smooth=0.021780), val=0.019905(smooth=0.018805) | trend=initializing | ETA=138s
+  [model] ██░░░░░░░░░░░░░░░░░░  14.7% | Epoch 22/150 | loss=0.020586(smooth=0.020684), val=0.019370(smooth=0.018682) | trend=improving | ETA=131s
+  [model] ███░░░░░░░░░░░░░░░░░  19.3% | Epoch 29/150 | loss=0.019641(smooth=0.020180), val=0.017125(smooth=0.018449) | trend=stable | ETA=124s
+  [model] ████░░░░░░░░░░░░░░░░  24.0% | Epoch 36/150 | loss=0.019513(smooth=0.019823), val=0.016895(smooth=0.018364) | trend=stable | ETA=117s
+  [model] █████░░░░░░░░░░░░░░░  28.7% | Epoch 43/150 | loss=0.019225(smooth=0.019612), val=0.017501(smooth=0.018016) | trend=stable | ETA=110s
+    Ensemble model 5/5...
+  [model] █░░░░░░░░░░░░░░░░░░░   5.3% | Epoch 8/150 | loss=0.022397(smooth=0.028341), val=0.022574(smooth=0.025187) | trend=initializing | ETA=147s
+  [model] ██░░░░░░░░░░░░░░░░░░  10.0% | Epoch 15/150 | loss=0.020815(smooth=0.021913), val=0.022389(smooth=0.022573) | trend=initializing | ETA=139s
+  [model] ██░░░░░░░░░░░░░░░░░░  14.7% | Epoch 22/150 | loss=0.020404(smooth=0.020758), val=0.016638(smooth=0.018976) | trend=improving | ETA=132s
+  [model] ███░░░░░░░░░░░░░░░░░  19.3% | Epoch 29/150 | loss=0.019869(smooth=0.020219), val=0.018793(smooth=0.018182) | trend=stable | ETA=125s
+  [model] ████░░░░░░░░░░░░░░░░  24.0% | Epoch 36/150 | loss=0.019731(smooth=0.019899), val=0.017877(smooth=0.018864) | trend=stable | ETA=118s
+  [model] █████░░░░░░░░░░░░░░░  28.7% | Epoch 43/150 | loss=0.019320(smooth=0.019585), val=0.016931(smooth=0.018539) | trend=stable | ETA=111s
+    Accuracy=0.9835, Precision=0.7087, Recall=0.8656, F1=0.7794 (threshold=0.34, ensemble of 5)
+  [collision] elapsed 225.5s
+
+Model results saved to: reports\model_training_results.json
+
+  TOTAL: 3804.3s

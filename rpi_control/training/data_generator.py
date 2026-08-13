@@ -100,7 +100,49 @@ KUKA_JOINT_LIMITS = [
     (-350, 350),    # A6: ±350°
 ]
 
-WORKSPACE_BOUNDS = {"x": (-500.0, 500.0), "y": (-500.0, 500.0), "z": (0.0, 500.0)}
+# 默认训练工作空间对齐 RPi 运行时 orchestrator.workspace_bounds (0~500, 0~500, 0~300)
+# 使 IK/运动/安全/碰撞模型训练与部署一致。
+WORKSPACE_BOUNDS = {"x": (0.0, 500.0), "y": (0.0, 500.0), "z": (0.0, 300.0)}
+
+# =============================================================================
+# 相机内参 + 手眼标定 (与 rpi_control/config/settings.yaml 及 vision/calibration.py 一致)
+# =============================================================================
+# 本会话修复: 视觉目标坐标必须经 像素 -> 相机系(K⁻¹) -> 机器人基座系(手眼 R,t) 链路,
+# 而不是把像素当 mm 直接线性外推 (原 735.5mm 误差的根源)。
+CAMERA_INTRINSICS = {"fx": 320.0, "fy": 320.0, "cx": 160.0, "cy": 120.0}
+HAND_EYE_ROTATION = np.array([[1.0, 0.0, 0.0], [0.0, -1.0, 0.0], [0.0, 0.0, -1.0]])
+HAND_EYE_TRANSLATION = np.array([-100.0, -200.0, 50.0])  # mm
+
+
+def pixel_to_robot(u: float, v: float, z_cam: float) -> Tuple[float, float, float]:
+    """像素 + 相机深度 -> 机器人基座系 (手眼正向链路)。
+
+    先 像素->相机系 (K⁻¹): x_cam=(u-cx)/fx*z, y_cam=(v-cy)/fy*z, z_cam=z;
+    再 相机->机器人: robot = R @ cam + t。单位 mm。
+    """
+    fx, fy, cx, cy = (CAMERA_INTRINSICS["fx"], CAMERA_INTRINSICS["fy"],
+                      CAMERA_INTRINSICS["cx"], CAMERA_INTRINSICS["cy"])
+    cam = np.array([(u - cx) * z_cam / fx, (v - cy) * z_cam / fy, z_cam], dtype=float)
+    return tuple(HAND_EYE_ROTATION @ cam + HAND_EYE_TRANSLATION)
+
+
+def robot_to_camera(robot: Tuple[float, float, float]) -> np.ndarray:
+    """机器人基座系 -> 相机系 (手眼逆向): cam = R^T (robot - t)。返回相机系坐标 (mm)。"""
+    r = np.array(robot, dtype=float)
+    return HAND_EYE_ROTATION.T @ (r - HAND_EYE_TRANSLATION)
+
+
+def robot_to_pixel(robot: Tuple[float, float, float]) -> Optional[Tuple[float, float, float]]:
+    """机器人基座系 -> 像素 (针孔反投影)。返回 (u, v, z_cam)；相机后方(z<=0)返回 None。"""
+    fx, fy, cx, cy = (CAMERA_INTRINSICS["fx"], CAMERA_INTRINSICS["fy"],
+                      CAMERA_INTRINSICS["cx"], CAMERA_INTRINSICS["cy"])
+    cam = robot_to_camera(robot)
+    z = float(cam[2])
+    if z <= 1e-6:
+        return None
+    u = fx * cam[0] / z + cx
+    v = fy * cam[1] / z + cy
+    return (u, v, z)
 
 # -- Real Servo Specs (MG996R) --
 # 来源: Tower Pro 数据手册 + 实测数据
@@ -504,6 +546,7 @@ class DatasetGenerator:
 
         for _ in range(num_samples):
             det_type = random.choice(detection_types)
+            obj_pos = None  # 机器人基座系目标位置, detect_color 分支内赋值
 
             if det_type == "detect_color":
                 color = random.choice(colors)
@@ -511,20 +554,44 @@ class DatasetGenerator:
                 # Use Beta distribution for confidence (bounded [0,1], more realistic)
                 # Beta(8, 2) gives mean ~0.8 with most values in [0.4, 0.99]
                 confidence = np.random.beta(8, 2) if found else np.random.beta(2, 5)
+                # 修复: 生成工作空间内目标(机器人基座系), 再经手眼/内参反投影得到像素,
+                # 保证像素与机器人坐标自洽, 而非把像素当 mm 线性外推。
+                # 当 found=True 时重试生成, 确保目标位于相机视场内(投影有效)。
+                obj_robot = None
+                proj = None
+                if found:
+                    for _retry in range(50):
+                        _cand = (
+                            random.uniform(*WORKSPACE_BOUNDS["x"]),
+                            random.uniform(*WORKSPACE_BOUNDS["y"]),
+                            random.uniform(0.0, 200.0),  # 相机可见高度范围内
+                        )
+                        _p = robot_to_pixel(_cand)
+                        if _p is not None:
+                            obj_robot, proj = _cand, _p
+                            break
+                if proj is not None:
+                    cx, cy, z_cam = proj
+                    det = {
+                        "cx": cx, "cy": cy, "z_cam": z_cam,
+                        "width": random.gauss(30, 10),
+                        "height": random.gauss(30, 10),
+                        "area": random.gauss(900, 300),
+                        "confidence": round(float(confidence), 4),
+                    }
+                    obj_pos = obj_robot
+                else:
+                    found = False  # 视场内无有效投影, 视为未检出
+                    det = {
+                        "cx": 0, "cy": 0, "z_cam": 0,
+                        "width": 0, "height": 0, "area": 0,
+                        "confidence": round(float(confidence), 4),
+                    }
+                    obj_pos = None
                 result = {
                     "found": found,
                     "type": "color",
-                    "data": {
-                        "color": color,
-                        "detection": {
-                            "cx": random.gauss(160, 40) if found else 0,
-                            "cy": random.gauss(120, 30) if found else 0,
-                            "width": random.gauss(30, 10) if found else 0,
-                            "height": random.gauss(30, 10) if found else 0,
-                            "area": random.gauss(900, 300) if found else 0,
-                            "confidence": round(float(confidence), 4),
-                        },
-                    },
+                    "data": {"color": color, "detection": det},
                 }
 
             elif det_type == "detect_apriltag":
@@ -591,15 +658,8 @@ class DatasetGenerator:
                     },
                 }
 
-            # Compute object position for ground truth
-            obj_pos = None
-            if det_type == "detect_color" and result.get("data", {}).get("detection"):
-                det = result["data"]["detection"]
-                obj_pos = (
-                    (det["cx"] / 320.0) * 500.0,
-                    (det["cy"] / 240.0) * 500.0,
-                    random.gauss(100, 20),
-                )
+            # 注意: detect_color 的 obj_pos 已在分支内经 像素->相机(K⁻¹)->机器人(手眼) 链路计算,
+            # 此处无需再线性外推, 直接沿用分支内已计算的 obj_pos。
 
             # Extract confidence correctly for each detection type
             sample_confidence = 0.0
@@ -1197,31 +1257,47 @@ class DatasetGenerator:
 
             confidence = round(confidence, 4)
 
+            # 生成工作空间内目标并经手眼/内参反投影得到像素(含噪声),
+            # 保证像素与机器人坐标自洽; found 时重试确保目标在相机视场内。
+            obj_robot = None
+            proj = None
+            if found:
+                for _retry in range(50):
+                    _cand = (
+                        random.uniform(*WORKSPACE_BOUNDS["x"]),
+                        random.uniform(*WORKSPACE_BOUNDS["y"]),
+                        random.uniform(0.0, 200.0),
+                    )
+                    _p = robot_to_pixel(_cand)
+                    if _p is not None:
+                        obj_robot, proj = _cand, _p
+                        break
+            if proj is not None:
+                det = {
+                    "cx": proj[0] + cx_noise,
+                    "cy": proj[1] + cy_noise,
+                    "z_cam": proj[2],
+                    "width": random.gauss(30, 10),
+                    "height": random.gauss(30, 10),
+                    "area": random.gauss(900, 300),
+                    "confidence": confidence,
+                }
+            else:
+                found = False
+                det = {
+                    "cx": 0, "cy": 0, "z_cam": 0,
+                    "width": 0, "height": 0, "area": 0,
+                    "confidence": confidence,
+                }
+
             result = {
                 "found": found,
                 "type": "color",
                 "noise_type": noise_type,
-                "data": {
-                    "color": color,
-                    "detection": {
-                        "cx": random.gauss(160, 40) + cx_noise if found else 0,
-                        "cy": random.gauss(120, 30) + cy_noise if found else 0,
-                        "width": random.gauss(30, 10) if found else 0,
-                        "height": random.gauss(30, 10) if found else 0,
-                        "area": random.gauss(900, 300) if found else 0,
-                        "confidence": confidence,
-                    },
-                },
+                "data": {"color": color, "detection": det},
             }
 
-            obj_pos = None
-            if found and result.get("data", {}).get("detection"):
-                det = result["data"]["detection"]
-                obj_pos = (
-                    (det["cx"] / 320.0) * 500.0,
-                    (det["cy"] / 240.0) * 500.0,
-                    random.gauss(100, 20),
-                )
+            obj_pos = obj_robot if proj is not None else None
 
             samples.append(VisionSample(
                 detection_type="detect_color",

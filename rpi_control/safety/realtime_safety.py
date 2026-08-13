@@ -17,6 +17,7 @@ Hard Real-Time Safety Controller for Embodied Intelligent Sampling Unit.
 """
 
 import enum
+import logging
 import math
 import threading
 import time
@@ -25,6 +26,8 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Deque, Dict, List, Optional, Set, Tuple
 
 import numpy as np
+
+logger = logging.getLogger("realtime_safety")
 
 
 # =============================================================================
@@ -454,7 +457,13 @@ class RealTimeSafetyController:
                 ))
 
     def _update_safety_state(self) -> None:
-        """更新安全状态."""
+        """更新安全状态.
+
+        增加详细日志埋点, 便于现场排查双网丢失等场景下的状态变化:
+        - 检测到 critical 事件时的数量与最严重事件描述
+        - 状态转移 (旧态 -> 新态) 及触发事件
+        - 无 critical 事件时的自动恢复
+        """
         critical_events = [e for e in self._events
                           if e.severity >= 2 and
                           time.time() - e.timestamp < 0.1]
@@ -463,11 +472,14 @@ class RealTimeSafetyController:
             if self._safety_state in (SafetyState.PROTECTIVE_STOP,
                                       SafetyState.REDUCED_SPEED):
                 # 自动恢复
+                logger.info("Safety: auto-recover %s -> NORMAL (no critical event within 100ms)",
+                            self._safety_state.value)
                 self._safety_state = SafetyState.NORMAL
             return
 
         # 根据最严重事件决定状态
         most_severe = max(critical_events, key=lambda e: e.severity)
+        old_state = self._safety_state
 
         if most_severe.event_type == SafetyEventType.ESTOP_PRESSED:
             self._safety_state = SafetyState.EMERGENCY_STOP
@@ -475,10 +487,32 @@ class RealTimeSafetyController:
             self._safety_state = SafetyState.SAFEGUARD_STOP
         elif most_severe.event_type in (SafetyEventType.COLLISION_DETECTED,
                                          SafetyEventType.TORQUE_OVERLOAD,
-                                         SafetyEventType.FORCE_LIMIT_EXCEEDED):
+                                         SafetyEventType.FORCE_LIMIT_EXCEEDED,
+                                         # 修复: 通信超时/关节越限/工作区越界/
+                                         # 掉电等 critical 事件此前未映射到任何
+                                         # 状态转移, 导致双网丢失等条件下
+                                         # is_safe_to_operate() 仍返回 True,
+                                         # 系统在失去安全通信后继续运行。
+                                         SafetyEventType.COMMUNICATION_TIMEOUT,
+                                         SafetyEventType.JOINT_LIMIT_VIOLATION,
+                                         SafetyEventType.WORKSPACE_VIOLATION,
+                                         SafetyEventType.POWER_LOSS):
             self._safety_state = SafetyState.PROTECTIVE_STOP
+        elif most_severe.event_type == SafetyEventType.HARDWARE_FAULT:
+            self._safety_state = SafetyState.FAULT
         elif most_severe.event_type == SafetyEventType.SPEED_LIMIT_EXCEEDED:
             self._safety_state = SafetyState.REDUCED_SPEED
+
+        # 状态发生转移时输出详细日志 (含触发事件与网络状态), 便于现场排查
+        if self._safety_state != old_state:
+            network = (f"primary={'OK' if self._primary_network_ok else 'LOST'}"
+                       f" backup={'OK' if self._backup_network_ok else 'LOST'}")
+            logger.warning(
+                "Safety: state transition %s -> %s | trigger=%s severity=%d | "
+                "desc=%s | network: %s | critical_events=%d",
+                old_state.value, self._safety_state.value,
+                most_severe.event_type.value, most_severe.severity,
+                most_severe.description, network, len(critical_events))
 
     # -------------------------------------------------------------------------
     # 事件处理
@@ -525,12 +559,20 @@ class RealTimeSafetyController:
         self._backup_network_ok = backup_ok
 
         if not primary_ok and not backup_ok:
+            logger.error(
+                "Safety: BOTH networks lost (primary=LOST backup=LOST) -> "
+                "emitting COMMUNICATION_TIMEOUT critical event")
             self._emit_event(SafetyEvent(
                 event_type=SafetyEventType.COMMUNICATION_TIMEOUT,
                 severity=2,
                 description="Both primary and backup networks lost",
                 source="network_redundancy",
             ))
+        else:
+            logger.debug(
+                "Safety: network status primary=%s backup=%s",
+                "OK" if primary_ok else "LOST",
+                "OK" if backup_ok else "LOST")
 
     # -------------------------------------------------------------------------
     # 时钟同步

@@ -23,7 +23,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # 复制依赖文件并安装到临时目录
 COPY requirements.txt .
-RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+# Round 12: 训练/监控专用依赖（模型重训与独立验证需要），仅装入构建阶段，
+# 生产阶段保持精简（运行时推理仅依赖 requirements.txt）。
+# 工业级升级 S3 动力学前馈模块 (motion/dynamic_feedforward.py) 仅依赖 numpy，
+# 已由 requirements.txt 覆盖，无需新增运行时依赖。
+COPY requirements-training.txt .
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt \
+    && pip install --no-cache-dir --prefix=/install -r requirements-training.txt
 
 # ---- 生产阶段 ----
 FROM python:3.11-slim-bookworm

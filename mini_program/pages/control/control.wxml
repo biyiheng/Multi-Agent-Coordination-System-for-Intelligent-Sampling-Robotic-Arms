@@ -1,0 +1,106 @@
+<!-- pages/control/control.wxml - Manual control page -->
+<view class="container">
+  <!-- Coordinate Display -->
+  <view class="card">
+    <view class="card-title">End-Effector Pose</view>
+    <view class="pose-grid">
+      <view class="pose-item">
+        <text class="pose-label">X</text>
+        <text class="pose-value">{{eePose.x}} mm</text>
+      </view>
+      <view class="pose-item">
+        <text class="pose-label">Y</text>
+        <text class="pose-value">{{eePose.y}} mm</text>
+      </view>
+      <view class="pose-item">
+        <text class="pose-label">Z</text>
+        <text class="pose-value">{{eePose.z}} mm</text>
+      </view>
+      <view class="pose-item">
+        <text class="pose-label">Roll</text>
+        <text class="pose-value">{{eePose.roll}}°</text>
+      </view>
+      <view class="pose-item">
+        <text class="pose-label">Pitch</text>
+        <text class="pose-value">{{eePose.pitch}}°</text>
+      </view>
+      <view class="pose-item">
+        <text class="pose-label">Yaw</text>
+        <text class="pose-value">{{eePose.yaw}}°</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- Joint Control -->
+  <view class="card">
+    <view class="card-title">Joint Control</view>
+    <view class="servo-list">
+      <servo-slider
+        wx:for="{{servos}}"
+        wx:key="id"
+        servo-id="{{item.id}}"
+        label="{{item.label}}"
+        min="{{item.min}}"
+        max="{{item.max}}"
+        value="{{item.value}}"
+        bind:change="onServoChange"
+      />
+    </view>
+  </view>
+
+  <!-- Cartesian Joystick -->
+  <view class="card">
+    <view class="card-title">Cartesian Control</view>
+    <joystick
+      bind:change="onJoystickChange"
+      bind:end="onJoystickEnd"
+    />
+    <view class="joystick-info">
+      <text class="text-sm text-muted">X: {{joystickX.toFixed(1)}} | Y: {{joystickY.toFixed(1)}}</text>
+    </view>
+  </view>
+
+  <!-- Gripper Control -->
+  <view class="card">
+    <view class="card-title">Gripper</view>
+    <view class="flex-row" style="gap: 20rpx;">
+      <button class="btn btn-primary flex-1" bindtap="onOpenGripper" loading="{{gripperLoading}}">
+        Open
+      </button>
+      <button class="btn btn-outline flex-1" bindtap="onCloseGripper" loading="{{gripperLoading}}">
+        Close
+      </button>
+    </view>
+    <view class="flex-between mt-20">
+      <text class="text-sm text-muted">Force</text>
+      <slider
+        min="0"
+        max="100"
+        value="{{gripperForce}}"
+        bindchange="onGripperForceChange"
+        style="flex: 1; margin: 0 20rpx;"
+        activeColor="#07C160"
+      />
+      <text class="text-sm">{{gripperForce}}%</text>
+    </view>
+  </view>
+
+  <!-- Action Group Buttons -->
+  <view class="card">
+    <view class="card-title">Actions</view>
+    <view class="grid-2">
+      <button class="btn btn-primary" bindtap="onOrigin" loading="{{actionLoading}}">
+        Home
+      </button>
+      <button class="btn btn-warning" bindtap="onStop" loading="{{actionLoading}}">
+        Stop
+      </button>
+      <button class="btn btn-danger" bindtap="onEstop" loading="{{actionLoading}}">
+        E-Stop
+      </button>
+      <button class="btn btn-outline" bindtap="onRefresh" loading="{{actionLoading}}">
+        Refresh
+      </button>
+    </view>
+  </view>
+</view>

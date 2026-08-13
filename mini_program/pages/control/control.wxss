@@ -1,0 +1,39 @@
+/* pages/control/control.wxss - Control panel styles */
+
+.pose-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16rpx;
+}
+
+.pose-item {
+  padding: 16rpx;
+  background: #f8f9fa;
+  border-radius: 12rpx;
+  text-align: center;
+}
+
+.pose-label {
+  display: block;
+  font-size: 24rpx;
+  color: #999999;
+  margin-bottom: 4rpx;
+}
+
+.pose-value {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #333333;
+}
+
+.servo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.joystick-info {
+  text-align: center;
+  margin-top: 16rpx;
+}

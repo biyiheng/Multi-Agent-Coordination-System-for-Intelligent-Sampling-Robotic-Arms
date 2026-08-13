@@ -807,10 +807,21 @@ class ForceGuidedAssembly:
         # 期望力: Z方向轻微下压
         desired_force = np.array([0, 0, 5.0, 0, 0, 0])  # 5N 下压力
 
+        # 期望位姿必须是 6 维 [x, y, z, roll, pitch, yaw]。
+        # hole_center 应为 3 维 [x, y, z]；兼容 2 维 [x, y] 输入时补 Z=0。
+        hole_center = np.asarray(hole_center, dtype=float).ravel()
+        if hole_center.size == 2:
+            center_pose = np.array([hole_center[0], hole_center[1], 0.0])
+        elif hole_center.size >= 3:
+            center_pose = hole_center[:3]
+        else:
+            raise ValueError("hole_center must be a 2D [x,y] or 3D [x,y,z] vector")
+        desired_pose = np.concatenate([center_pose, np.zeros(3)])
+
         return self._hybrid.update(
             current_pose=current_pose,
             current_velocity=np.zeros(6),
-            desired_pose=np.append(hole_center, [0, 0, 0, 0]),
+            desired_pose=desired_pose,
             measured_force=np.append(measured_force.force_vector,
                                      measured_force.torque_vector),
             desired_force=desired_force,

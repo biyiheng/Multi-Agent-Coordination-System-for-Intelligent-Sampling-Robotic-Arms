@@ -1,0 +1,139 @@
+<!-- pages/task/task.wxml - Task management page -->
+<view class="container">
+  <!-- Create Task Form -->
+  <view class="card">
+    <view class="card-title">Create Task</view>
+    <view class="form-group">
+      <text class="label">Task Name</text>
+      <input class="input" placeholder="Enter task name" value="{{newTask.name}}" bindinput="onNameInput" />
+    </view>
+
+    <view class="form-group">
+      <text class="label">Strategy</text>
+      <picker mode="selector" range="{{strategies}}" value="{{newTask.strategyIndex}}" bindchange="onStrategyChange">
+        <view class="picker-value">{{strategies[newTask.strategyIndex]}}</view>
+      </picker>
+    </view>
+
+    <view class="form-group">
+      <text class="label">Bounds</text>
+      <view class="grid-2">
+        <view>
+          <text class="text-sm text-muted">X Min</text>
+          <input class="input" type="digit" placeholder="0" value="{{newTask.bounds.x_min}}" data-field="x_min" bindinput="onBoundsInput" />
+        </view>
+        <view>
+          <text class="text-sm text-muted">X Max</text>
+          <input class="input" type="digit" placeholder="100" value="{{newTask.bounds.x_max}}" data-field="x_max" bindinput="onBoundsInput" />
+        </view>
+        <view>
+          <text class="text-sm text-muted">Y Min</text>
+          <input class="input" type="digit" placeholder="0" value="{{newTask.bounds.y_min}}" data-field="y_min" bindinput="onBoundsInput" />
+        </view>
+        <view>
+          <text class="text-sm text-muted">Y Max</text>
+          <input class="input" type="digit" placeholder="100" value="{{newTask.bounds.y_max}}" data-field="y_max" bindinput="onBoundsInput" />
+        </view>
+      </view>
+      <view class="mt-10">
+        <text class="text-sm text-muted">Z Height</text>
+        <input class="input" type="digit" placeholder="10" value="{{newTask.bounds.z}}" data-field="z" bindinput="onBoundsInput" />
+      </view>
+    </view>
+
+    <view class="form-group">
+      <text class="label">Step Size (mm, for grid strategy)</text>
+      <input class="input" type="digit" placeholder="50" value="{{newTask.params.step}}" data-field="step" bindinput="onParamInput" />
+    </view>
+
+    <view class="form-group">
+      <text class="label">Priority</text>
+      <slider min="0" max="10" value="{{newTask.priority}}" bindchange="onPriorityChange" activeColor="#07C160" show-value />
+    </view>
+
+    <button class="btn btn-primary btn-block" bindtap="onCreateTask" loading="{{creating}}">
+      Create Task
+    </button>
+  </view>
+
+  <!-- Task List -->
+  <view class="card">
+    <view class="flex-between mb-20">
+      <text class="card-title" style="margin-bottom:0; border-bottom:none; padding-bottom:0;">Tasks</text>
+      <picker mode="selector" range="{{statusFilters}}" value="{{filterIndex}}" bindchange="onFilterChange">
+        <view class="text-sm text-muted">Filter: {{statusFilters[filterIndex]}} ></view>
+      </picker>
+    </view>
+
+    <block wx:if="{{tasks.length > 0}}">
+      <view
+        wx:for="{{tasks}}"
+        wx:key="id"
+        class="task-card"
+        bindtap="onTaskTap"
+        data-id="{{item.id}}"
+      >
+        <view class="flex-between">
+          <text class="task-name">{{item.name}}</text>
+          <view class="tag tag-{{item.status}}">{{item.status}}</view>
+        </view>
+        <view class="flex-between mt-10">
+          <text class="text-sm text-muted">{{item.strategy}}</text>
+          <text class="text-sm text-muted">{{item.created_at}}</text>
+        </view>
+
+        <!-- Progress bar -->
+        <view wx:if="{{item.progress}}" class="mt-10">
+          <view class="progress-bar">
+            <view
+              class="progress-fill"
+              style="width: {{item.progress.completed_samples / item.progress.total_samples * 100}}%"
+            ></view>
+          </view>
+          <view class="flex-between mt-4">
+            <text class="text-sm text-muted">{{item.progress.completed_samples}}/{{item.progress.total_samples}}</text>
+            <text class="text-sm text-muted">{{item.progress.current_step}}</text>
+          </view>
+        </view>
+
+        <!-- Task controls -->
+        <view class="task-controls mt-10">
+          <button
+            wx:if="{{item.status === 'idle' || item.status === 'paused'}}"
+            class="btn btn-primary btn-small"
+            bindtap="onStartTask"
+            data-id="{{item.id}}"
+            catchtap="onStartTask"
+          >Start</button>
+
+          <button
+            wx:if="{{item.status === 'running'}}"
+            class="btn btn-warning btn-small"
+            bindtap="onPauseTask"
+            data-id="{{item.id}}"
+            catchtap="onPauseTask"
+          >Pause</button>
+
+          <button
+            wx:if="{{item.status === 'running' || item.status === 'paused'}}"
+            class="btn btn-danger btn-small"
+            bindtap="onCancelTask"
+            data-id="{{item.id}}"
+            catchtap="onCancelTask"
+          >Cancel</button>
+
+          <button
+            class="btn btn-outline btn-small"
+            bindtap="onDeleteTask"
+            data-id="{{item.id}}"
+            catchtap="onDeleteTask"
+          >Delete</button>
+        </view>
+      </view>
+    </block>
+
+    <block wx:else>
+      <view class="empty-state">No tasks found</view>
+    </block>
+  </view>
+</view>

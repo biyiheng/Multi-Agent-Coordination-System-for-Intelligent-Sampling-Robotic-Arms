@@ -148,15 +148,18 @@ _SOLVABLE_FK_ANGLES = [0.79, -0.79, -0.79, 0.0, 0.0, 0.0]
 
 def _get_solvable_fk_pose() -> np.ndarray:
     """获取一个 IK 可解的 FK 末端位姿。
-    
+
     使用已知的可解关节角度计算 FK，得到 IK 可以逆向求解的位姿。
-    
+
+    注意：必须返回**完整位姿（位置 + 姿态）**。若仅保留位置而把姿态强制为
+    恒等旋转 (0,0,0)，则该位姿与真实 FK 姿态不一致，物理上不可达，IK 会
+    正确抛出 IK_NO_SOLUTION —— 这曾导致 test_ik_reachable_point 误报。
+    使用 get_end_effector_pose() 同时保留位置与姿态，保证目标位姿真实可达。
+
     Returns:
         6 元素目标位姿 [x, y, z, roll, pitch, yaw]
     """
-    T, _ = forward_kinematics(_SOLVABLE_FK_ANGLES)
-    pos = T[:3, 3]
-    return np.array([pos[0], pos[1], pos[2], 0.0, 0.0, 0.0])
+    return get_end_effector_pose(_SOLVABLE_FK_ANGLES)
 
 def _run_async(coro):
     """同步运行异步协程的辅助函数。"""

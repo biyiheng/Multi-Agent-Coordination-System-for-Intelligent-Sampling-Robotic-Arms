@@ -1,0 +1,117 @@
+/* components/status-panel/status-panel.wxss - Status panel styles */
+
+.status-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.safety-indicator {
+  padding: 12rpx 20rpx;
+  border-radius: 12rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.safety-normal {
+  background: #f6ffed;
+  border: 2rpx solid #b7eb8f;
+}
+
+.safety-warning {
+  background: #fffbe6;
+  border: 2rpx solid #ffe58f;
+}
+
+.safety-critical {
+  background: #fff2f0;
+  border: 2rpx solid #ffa39e;
+}
+
+.safety-badge {
+  padding: 4rpx 24rpx;
+  border-radius: 20rpx;
+}
+
+.safety-normal .safety-badge {
+  background: #52C41A;
+}
+
+.safety-warning .safety-badge {
+  background: #FAAD14;
+}
+
+.safety-critical .safety-badge {
+  background: #FA5151;
+}
+
+.safety-text {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #ffffff;
+  text-transform: uppercase;
+}
+
+.status-section {
+  padding: 8rpx 0;
+}
+
+.section-title {
+  font-size: 24rpx;
+  color: #999999;
+  margin-bottom: 8rpx;
+  display: block;
+}
+
+.joint-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8rpx;
+}
+
+.joint-cell {
+  text-align: center;
+  padding: 8rpx;
+  background: #f8f9fa;
+  border-radius: 8rpx;
+}
+
+.joint-name {
+  display: block;
+  font-size: 22rpx;
+  color: #999999;
+}
+
+.joint-angle {
+  display: block;
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #333333;
+}
+
+.pose-row {
+  display: flex;
+  gap: 8rpx;
+}
+
+.pose-cell {
+  flex: 1;
+  text-align: center;
+  padding: 8rpx;
+  background: #f8f9fa;
+  border-radius: 8rpx;
+}
+
+.pose-label {
+  display: block;
+  font-size: 22rpx;
+  color: #999999;
+}
+
+.pose-value {
+  display: block;
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #333333;
+}

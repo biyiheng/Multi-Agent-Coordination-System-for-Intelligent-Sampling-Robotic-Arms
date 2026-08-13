@@ -1,0 +1,29 @@
+/* components/servo-slider/servo-slider.wxss - Servo slider styles */
+
+.servo-slider {
+  padding: 12rpx 0;
+}
+
+.servo-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8rpx;
+}
+
+.servo-label {
+  font-size: 26rpx;
+  color: #333333;
+  font-weight: 500;
+}
+
+.servo-value {
+  font-size: 24rpx;
+  color: #999999;
+}
+
+.servo-range {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4rpx;
+}

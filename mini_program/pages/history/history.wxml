@@ -1,0 +1,71 @@
+<!-- pages/history/history.wxml - History page -->
+<view class="container">
+  <!-- Filters -->
+  <view class="card">
+    <view class="card-title">Filters</view>
+    <view class="flex-row" style="gap: 20rpx;">
+      <picker mode="date" value="{{filters.date}}" bindchange="onDateChange" style="flex: 1;">
+        <view class="picker-value">{{filters.date || 'Select Date'}}</view>
+      </picker>
+      <picker mode="selector" range="{{taskOptions}}" value="{{filters.taskIndex}}" bindchange="onTaskFilterChange" style="flex: 1;">
+        <view class="picker-value">{{taskOptions[filters.taskIndex]}}</view>
+      </picker>
+    </view>
+    <view class="flex-row mt-10" style="gap: 20rpx;">
+      <view class="flex-1">
+        <text class="text-sm text-muted">Min Quality</text>
+        <slider min="0" max="100" value="{{filters.minQuality}}" bindchange="onQualityFilterChange" activeColor="#07C160" />
+      </view>
+      <text class="text-sm">{{filters.minQuality / 100}}</text>
+    </view>
+    <view class="flex-between mt-20">
+      <button class="btn btn-primary btn-small" bindtap="onApplyFilter">Apply</button>
+      <button class="btn btn-outline btn-small" bindtap="onExport">Export</button>
+    </view>
+  </view>
+
+  <!-- Sample List -->
+  <view class="card">
+    <view class="flex-between mb-20">
+      <text class="card-title" style="margin-bottom:0; border-bottom:none; padding-bottom:0;">
+        Samples ({{samples.length}})
+      </text>
+      <text class="text-sm text-muted" bindtap="onRefresh">Refresh</text>
+    </view>
+
+    <block wx:if="{{samples.length > 0}}">
+      <view
+        wx:for="{{samples}}"
+        wx:key="id"
+        class="sample-item"
+        bindtap="onSampleDetail"
+        data-id="{{item.id}}"
+      >
+        <view class="flex-between">
+          <view>
+            <text class="sample-id">{{item.id}}</text>
+            <view class="sample-pos text-sm text-muted">
+              ({{item.position.x}}, {{item.position.y}}, {{item.position.z}})
+            </view>
+          </view>
+          <view class="text-right">
+            <text class="quality-score {{item.passed ? 'status-ok' : 'status-error'}}">
+              {{(item.quality_score * 100).toFixed(0)}}%
+            </text>
+            <view class="tag {{item.passed ? 'tag-completed' : 'tag-failed'}}">
+              {{item.passed ? 'PASS' : 'FAIL'}}
+            </view>
+          </view>
+        </view>
+        <view class="flex-between mt-10">
+          <text class="text-sm text-muted">{{item.timestamp}}</text>
+          <text class="text-sm text-muted">Task: {{item.task_id}}</text>
+        </view>
+      </view>
+    </block>
+
+    <block wx:else>
+      <view class="empty-state">No samples found</view>
+    </block>
+  </view>
+</view>

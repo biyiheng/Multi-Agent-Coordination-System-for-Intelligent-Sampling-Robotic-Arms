@@ -79,10 +79,11 @@
 
 **已修复并验证**：
 - 视觉→运动坐标链路全贯通（编排器、vision、sampling、grasp_pipeline）；
-- PnP K⁻¹ 归一化、焦距同步、工作空间原点对齐（C# 侧）。
+- PnP K⁻¹ 归一化、焦距同步、工作空间原点对齐（C# 侧）；
+- **Round 11（2026-08-09）**：训练数据 `data_generator` 已按手眼链路实现 `pixel_to_robot`/`robot_to_pixel`，并与 `config/settings.yaml` 的内参与手眼参数保持一致；训练工作空间统一为 `0~500 / 0~300 mm`，与 RPi 侧 `orchestrator.workspace_bounds` 对齐，消除了训练/部署分布不一致。
 
 **遗留（需真机标定后处理）**：
-- RPi 侧各智能体 `workspace_bounds`（0~500）仍与手眼原点不一致，需在真机手眼标定后统一（改默认手眼参数进入正象限，或放宽 RPi 边界为负区间）；
+- 仿真手眼参数与真机手眼标定结果需在真机上对齐（改默认手眼参数进入正象限，或放宽 RPi 边界为负区间）；
 - OpenMV 内参（自动计算）与 RPi K 需在真机上对齐；
 - PnP(米) 与 AprilTag(毫米) 两路原始单位不同，建议在代码层统一为单一基准（如一律 mm）。
 

@@ -16,6 +16,7 @@ Integrated IK-NN model for accelerated inverse kinematics solving.
 """
 
 import asyncio
+import json
 import math
 import os
 import pickle
@@ -125,6 +126,12 @@ class MotionAgent(BaseAgent):
         self._stm32_retry_count: int = 3
         self._ik_model: Any = None  # IK neural network model
         self._ik_model_loaded: bool = False
+        self._ik_meta: Optional[Dict[str, Any]] = None  # IK normalization metadata
+        # Joint limits in degrees (matches kinematics.DEFAULT_JOINT_LIMITS)
+        self._joint_limits: List[Tuple[float, float]] = [
+            (-90.0, 90.0), (-90.0, 90.0), (-90.0, 90.0),
+            (-90.0, 90.0), (-90.0, 90.0), (-45.0, 45.0),
+        ]
         # Motion type dispatch table (O(1) lookup instead of if-elif chain)
         self._motion_handlers: Dict[str, Callable[[Dict[str, Any]], Coroutine[Any, Any, Optional[Dict[str, Any]]]]] = {
             "plan_motion": self._handle_plan_motion,
@@ -193,17 +200,41 @@ class MotionAgent(BaseAgent):
                         model_data = pickle.load(f)
                     self._ik_model = model_data
                     self._ik_model_loaded = True
-                    self.log(f"IK model loaded from {abs_path} (R²≈0.77)")
+                    self._ik_meta = self._load_ik_meta()
+                    self.log(f"IK model loaded from {abs_path}")
                     return
                 except Exception as e:
                     self.log(f"Failed to load IK model from {abs_path}: {e}", 30)
 
         self.log("IK model not found, using analytical IK only", 30)
 
+    def _load_ik_meta(self) -> Optional[Dict[str, Any]]:
+        """Load the normalization metadata saved alongside the IK model."""
+        meta_paths = [
+            os.path.join(os.path.dirname(__file__), "..", "models", "motion_ik_model_meta.json"),
+            os.path.join(os.path.dirname(__file__), "..", "..", "models", "motion_ik_model_meta.json"),
+            "models/motion_ik_model_meta.json",
+        ]
+        for path in meta_paths:
+            abs_path = os.path.abspath(path)
+            if os.path.exists(abs_path):
+                try:
+                    with open(abs_path, "r", encoding="utf-8") as f:
+                        return json.load(f)
+                except Exception as e:
+                    self.log(f"Failed to load IK meta from {abs_path}: {e}", 30)
+        return None
+
     def solve_ik_nn(self, target_pose: Tuple[float, float, float, float, float, float]) -> Optional[List[float]]:
         """Use the trained NN to predict initial joint angles for IK.
 
         This provides a warm start that accelerates analytical IK convergence.
+
+        The model was trained on NORMALIZED inputs and produces NORMALIZED
+        outputs, with batch-norm hidden layers. Therefore inference MUST:
+          1. Normalize the input pose using X_mean/X_std from the meta file.
+          2. Apply batch-norm layers in inference mode (running stats).
+          3. Denormalize the output using y_mean/y_std.
 
         Args:
             target_pose: (x, y, z, roll, pitch, yaw) in mm and radians.
@@ -213,26 +244,55 @@ class MotionAgent(BaseAgent):
         """
         if not self._ik_model_loaded or self._ik_model is None:
             return None
+        if self._ik_meta is None:
+            self.log("IK normalization metadata missing, using analytical IK only", 30)
+            return None
 
         try:
             weights = self._ik_model["weights"]
             biases = self._ik_model["biases"]
             activation = self._ik_model.get("activation", "relu")
+            output_activation = self._ik_model.get("output_activation", "linear")
+            use_bn = self._ik_model.get("use_batch_norm", False)
+            bn_gamma = self._ik_model.get("bn_gamma")
+            bn_beta = self._ik_model.get("bn_beta")
+            bn_running_mean = self._ik_model.get("bn_running_mean")
+            bn_running_var = self._ik_model.get("bn_running_var")
 
-            # Forward pass
-            x = np.array(target_pose, dtype=np.float32).reshape(1, -1)
+            meta = self._ik_meta
+            x_mean = np.array(meta["X_mean"], dtype=np.float32)
+            x_std = np.array(meta["X_std"], dtype=np.float32)
+            y_mean = np.array(meta["y_mean"], dtype=np.float32)
+            y_std = np.array(meta["y_std"], dtype=np.float32)
+
+            # 1. Normalize input pose
+            x = (np.array(target_pose, dtype=np.float32).reshape(1, -1) - x_mean) / (x_std + 1e-8)
+
+            # 2. Forward pass with batch-norm (inference mode)
             for i, (W, b) in enumerate(zip(weights, biases)):
                 W_arr = np.array(W, dtype=np.float32)
                 b_arr = np.array(b, dtype=np.float32)
                 x = x @ W_arr + b_arr
+
+                # Apply batch-norm for hidden layers using running statistics
+                if use_bn and i < len(weights) - 1 and bn_gamma is not None and bn_gamma[i] is not None:
+                    g = np.array(bn_gamma[i], dtype=np.float32)
+                    beta = np.array(bn_beta[i], dtype=np.float32)
+                    rm = np.array(bn_running_mean[i], dtype=np.float32)
+                    rv = np.array(bn_running_var[i], dtype=np.float32)
+                    x = g * (x - rm) / np.sqrt(rv + 1e-8) + beta
+
                 if i < len(weights) - 1:
                     if activation == "relu":
                         x = np.maximum(0, x)
                     elif activation == "tanh":
                         x = np.tanh(x)
+                else:
+                    if output_activation == "sigmoid":
+                        x = 1.0 / (1.0 + np.exp(-np.clip(x, -500, 500)))
 
-            # Convert from radians to degrees
-            joints_rad = x.flatten().tolist()
+            # 3. Denormalize output
+            joints_rad = (x.flatten() * y_std + y_mean).tolist()
             joints_deg = [round(math.degrees(j), 2) for j in joints_rad]
 
             # Clamp to joint limits

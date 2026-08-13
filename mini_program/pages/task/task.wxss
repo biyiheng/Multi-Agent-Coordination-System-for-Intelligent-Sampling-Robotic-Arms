@@ -1,0 +1,57 @@
+/* pages/task/task.wxss - Task page styles */
+
+.form-group {
+  margin-bottom: 24rpx;
+}
+
+.picker-value {
+  height: 80rpx;
+  line-height: 80rpx;
+  border: 2rpx solid #e8e8e8;
+  border-radius: 12rpx;
+  padding: 0 24rpx;
+  font-size: 28rpx;
+  color: #333333;
+}
+
+.task-card {
+  padding: 24rpx;
+  margin-bottom: 16rpx;
+  border: 2rpx solid #f0f0f0;
+  border-radius: 12rpx;
+  background: #ffffff;
+}
+
+.task-card:active {
+  background: #fafafa;
+}
+
+.task-name {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #333333;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.progress-bar {
+  height: 12rpx;
+  background: #f0f0f0;
+  border-radius: 6rpx;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #07C160, #1890FF);
+  border-radius: 6rpx;
+  transition: width 0.5s ease;
+}
+
+.task-controls {
+  display: flex;
+  gap: 12rpx;
+  flex-wrap: wrap;
+}

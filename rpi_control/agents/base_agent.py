@@ -13,6 +13,7 @@ import abc
 import asyncio
 import itertools
 import logging
+import math
 import time
 from collections import deque
 from enum import Enum
@@ -195,6 +196,14 @@ class BaseAgent(abc.ABC):
             self.log("Agent is disabled, skipping", logging.WARNING)
             return state
 
+        # Enforce underlying decision-making constraints (guardrail).
+        constraint_error = self.check_constraints(state)
+        if constraint_error is not None:
+            self.log(constraint_error, logging.ERROR)
+            self.status = AgentStatus.ERROR
+            state["error"] = constraint_error
+            return state
+
         self.status = AgentStatus.RUNNING
         self.log(f"Starting run with state keys: {list(state.keys())}")
 
@@ -280,6 +289,16 @@ class BaseAgent(abc.ABC):
                 hook(self, state, result)
             except Exception as e:
                 self.log(f"Post-hook failed: {e}", logging.WARNING)
+
+        # Enforce output constraints (guardrail) on the produced decision, so
+        # the "符合事实逻辑 / 常识性要求" clauses also cover the OUTPUT and not
+        # only the input. An agent must not return physically-impossible values
+        # (NaN/Inf/out-of-range) even after processing.
+        out_constraint = self.check_constraints(result)
+        if out_constraint is not None:
+            self.log(out_constraint, logging.ERROR)
+            self.status = AgentStatus.ERROR
+            result["error"] = out_constraint
 
         # Record state
         self._record_state(result)
@@ -398,6 +417,156 @@ class BaseAgent(abc.ABC):
             hook: Callable taking (agent, input_state, output_state).
         """
         self._post_hooks.append(hook)
+
+    # =========================================================================
+    # Underlying Decision-Making Constraints (guardrail)
+    # =========================================================================
+
+    def check_constraints(self, state: Dict[str, Any]) -> Optional[str]:
+        """Enforce the underlying decision-making constraints on a state dict.
+
+        This is a *framework-level* guardrail applied to every agent on every
+        ``run()``.  Its purpose is to make sure no agent can:
+
+        - **不可擅自决策 (no unauthorized decisions)**: a decision that carries an
+          explicit ``authorization_required`` marker must not be auto-committed
+          unless an ``authorization`` token has actually been provided.
+        - **不可不懂装懂 (no pretending to know)**: a decision must not be based on
+          data explicitly flagged as unverified / assumed (``assumed`` or
+          ``unverified_assumptions``).
+        - **一切必须符合事实逻辑 (must conform to factual logic)**: numeric state
+          values must be finite — NaN/Inf are never physically real.
+        - **辅助决策必须满足常识性要求 (common-sense sanity)**: any obviously
+          impossible value (e.g. negative distance, out-of-range PWM) is rejected.
+
+        Subclasses may call this directly or rely on ``run()`` which invokes it
+        automatically before processing.
+
+        Args:
+            state: The input/output state dict to validate.
+
+        Returns:
+            An error string describing the first violated constraint, or None
+            if all constraints are satisfied.
+        """
+        # --- 事实逻辑: finite numeric values (never NaN/Inf) ---
+        # 递归扫描: 代理实际返回的物理量常嵌套于 dict/list 中
+        # (vision_result / motion_result / sampling_points), 仅检查顶层
+        # float 会漏掉真实运行场景中的非法值。
+        non_finite = self._scan_non_finite(state)
+        if non_finite is not None:
+            return (
+                f"Constraint violated (factual logic): field '{non_finite}' is "
+                "NaN/Inf, which is not physically real"
+            )
+
+        # --- 不可不懂装懂: no decisions based on unverified assumptions ---
+        assumed = state.get("assumed") or state.get("unverified_assumptions")
+        if assumed:
+            return (
+                f"Constraint violated (no pretending to know): decision relies "
+                f"on unverified assumptions: {assumed}"
+            )
+
+        # --- 不可擅自决策: authorized decisions only ---
+        if state.get("authorization_required") and not state.get("authorization"):
+            return (
+                "Constraint violated (unauthorized decision): authorization is "
+                "required but no authorization token was provided"
+            )
+
+        # --- 常识性要求: common-sense physical sanity ---
+        if "joint_positions" in state and isinstance(state["joint_positions"], dict):
+            for joint, angle in state["joint_positions"].items():
+                if isinstance(angle, (int, float)) and abs(angle) > 360.0:
+                    return (
+                        f"Constraint violated (common-sense): joint '{joint}' "
+                        f"angle {angle}° exceeds a physically plausible range"
+                    )
+
+        # --- 常识性要求: servo PWM range (500..2500 us is the physical span) ---
+        pwm_err = self._check_pwm_range(state)
+        if pwm_err is not None:
+            return pwm_err
+
+        return None
+
+    # =========================================================================
+    # Constraint Helper Checks (recursive, covers nested runtime data)
+    # =========================================================================
+
+    def _scan_non_finite(self, value: Any, path: str = "") -> Optional[str]:
+        """Recursively search for NaN/Inf in a nested state structure.
+
+        Args:
+            value: The current value to inspect (dict / list / scalar).
+            path: Dotted path for error reporting.
+
+        Returns:
+            The path of the first non-finite value, or None.
+        """
+        if isinstance(value, dict):
+            for k, v in value.items():
+                p = f"{path}.{k}" if path else str(k)
+                hit = self._scan_non_finite(v, p)
+                if hit is not None:
+                    return hit
+            return None
+        if isinstance(value, (list, tuple)):
+            for i, v in enumerate(value):
+                p = f"{path}[{i}]"
+                hit = self._scan_non_finite(v, p)
+                if hit is not None:
+                    return hit
+            return None
+        if isinstance(value, float):
+            if math.isnan(value) or math.isinf(value):
+                return path or "<value>"
+        return None
+
+    # 舵机 PWM 物理范围 (μs): 超出该范围必然无法驱动真实舵机
+    SERVO_PWM_MIN = 500
+    SERVO_PWM_MAX = 2500
+
+    def _check_pwm_range(self, state: Dict[str, Any]) -> Optional[str]:
+        """Validate servo PWM values are within the physical 500..2500 μs range.
+
+        PWM 通常以 ``pwm`` 字段 (dict: 关节->PWM) 或嵌套于
+        motion_result / servo_cmd 中出现。超出范围的 PWM 属于明显违背
+        常识性物理约束的值。
+
+        Args:
+            state: The state dict to validate.
+
+        Returns:
+            An error string, or None if all PWM values are in range.
+        """
+        def walk(value: Any, path: str = "") -> Optional[str]:
+            if isinstance(value, dict):
+                # 关节字典形如 {joint_0: 1500}
+                if path.endswith("pwm") or "pwm" in path:
+                    for k, v in value.items():
+                        if isinstance(v, (int, float)) and not isinstance(v, bool):
+                            if not (self.SERVO_PWM_MIN <= v <= self.SERVO_PWM_MAX):
+                                return (
+                                    f"Constraint violated (common-sense): PWM "
+                                    f"{v} for '{k}' ({path}) is outside the "
+                                    f"physical range {self.SERVO_PWM_MIN}.."
+                                    f"{self.SERVO_PWM_MAX} μs"
+                                )
+                for k, v in value.items():
+                    p = f"{path}.{k}" if path else str(k)
+                    hit = walk(v, p)
+                    if hit is not None:
+                        return hit
+            elif isinstance(value, (list, tuple)):
+                for i, v in enumerate(value):
+                    p = f"{path}[{i}]"
+                    hit = walk(v, p)
+                    if hit is not None:
+                        return hit
+            return None
+        return walk(state)
 
     # =========================================================================
     # Internal

@@ -1,0 +1,122 @@
+/* pages/monitor/monitor.wxss - Monitor dashboard styles */
+
+.arm-display {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.joint-bar {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.joint-label {
+  width: 48rpx;
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #666666;
+}
+
+.joint-track {
+  flex: 1;
+  height: 16rpx;
+  background: #f0f0f0;
+  border-radius: 8rpx;
+  overflow: hidden;
+}
+
+.joint-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #07C160, #1890FF);
+  border-radius: 8rpx;
+  transition: width 0.3s ease;
+}
+
+.joint-value {
+  width: 80rpx;
+  font-size: 24rpx;
+  color: #333333;
+  text-align: right;
+}
+
+.ee-display {
+  text-align: center;
+  padding: 12rpx;
+  background: #f8f9fa;
+  border-radius: 8rpx;
+}
+
+.sensor-card {
+  padding: 20rpx;
+  background: #f8f9fa;
+  border-radius: 12rpx;
+  text-align: center;
+}
+
+.sensor-icon {
+  font-size: 40rpx;
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+.sensor-name {
+  display: block;
+  font-size: 22rpx;
+  color: #999999;
+  margin-bottom: 4rpx;
+}
+
+.sensor-val {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #333333;
+}
+
+.safety-status {
+  padding: 16rpx;
+  border-radius: 12rpx;
+  text-align: center;
+}
+
+.safety-normal {
+  background: #f6ffed;
+  border: 2rpx solid #b7eb8f;
+}
+
+.safety-warning {
+  background: #fffbe6;
+  border: 2rpx solid #ffe58f;
+}
+
+.safety-critical {
+  background: #fff2f0;
+  border: 2rpx solid #ffa39e;
+}
+
+.safety-level {
+  font-size: 32rpx;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.safety-normal .safety-level { color: #52C41A; }
+.safety-warning .safety-level { color: #FAAD14; }
+.safety-critical .safety-level { color: #FA5151; }
+
+.log-item {
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid #f5f5f5;
+}
+
+.log-item:last-child {
+  border-bottom: none;
+}
+
+.log-type {
+  font-size: 26rpx;
+  color: #333333;
+  font-weight: 500;
+}

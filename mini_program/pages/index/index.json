@@ -1,0 +1,7 @@
+{
+  "usingComponents": {
+    "status-panel": "/components/status-panel/status-panel"
+  },
+  "navigationBarTitleText": "Dashboard",
+  "enablePullDownRefresh": true
+}

@@ -1,0 +1,90 @@
+<!-- pages/monitor/monitor.wxml - Real-time monitoring page -->
+<view class="container">
+  <!-- Camera View -->
+  <view class="card">
+    <view class="card-title">Camera</view>
+    <camera-view server-url="{{serverUrl}}" />
+  </view>
+
+  <!-- Arm Position Display -->
+  <view class="card">
+    <view class="card-title">Arm Position</view>
+    <view class="arm-display">
+      <view wx:for="{{jointPositions}}" wx:key="index" class="joint-bar">
+        <text class="joint-label">J{{index + 1}}</text>
+        <view class="joint-track">
+          <view class="joint-fill" style="width: {{item / 180 * 100}}%"></view>
+        </view>
+        <text class="joint-value">{{item}}°</text>
+      </view>
+    </view>
+    <view class="ee-display mt-20">
+      <text class="text-sm">End-Effector: X:{{eePose.x}} Y:{{eePose.y}} Z:{{eePose.z}}</text>
+    </view>
+  </view>
+
+  <!-- Sensor Readings -->
+  <view class="card">
+    <view class="card-title">Sensors</view>
+    <view class="grid-2">
+      <view class="sensor-card">
+        <text class="sensor-icon">🌡</text>
+        <text class="sensor-name">Temperature</text>
+        <text class="sensor-val">{{sensorData.temperature}}°C</text>
+      </view>
+      <view class="sensor-card">
+        <text class="sensor-icon">💧</text>
+        <text class="sensor-name">Humidity</text>
+        <text class="sensor-val">{{sensorData.humidity}}%</text>
+      </view>
+      <view class="sensor-card">
+        <text class="sensor-icon">📏</text>
+        <text class="sensor-name">Distance</text>
+        <text class="sensor-val">{{sensorData.distance}}mm</text>
+      </view>
+      <view class="sensor-card">
+        <text class="sensor-icon">⚡</text>
+        <text class="sensor-name">Voltage</text>
+        <text class="sensor-val">{{sensorData.voltage}}V</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- Safety Status -->
+  <view class="card">
+    <view class="card-title">Safety</view>
+    <view class="safety-status safety-{{safetyStatus.level}}">
+      <text class="safety-level">{{safetyStatus.level}}</text>
+    </view>
+    <view wx:if="{{safetyStatus.warnings.length > 0}}" class="mt-10">
+      <text class="text-sm status-warning">Warnings: {{safetyStatus.warnings.length}}</text>
+    </view>
+    <view wx:if="{{safetyStatus.errors.length > 0}}" class="mt-10">
+      <text class="text-sm status-error">Errors: {{safetyStatus.errors.length}}</text>
+    </view>
+    <view wx:if="{{safetyStatus.emergency_stop}}" class="mt-10">
+      <text class="text-sm status-error">EMERGENCY STOP ACTIVE</text>
+    </view>
+  </view>
+
+  <!-- Log Stream -->
+  <view class="card">
+    <view class="flex-between mb-20">
+      <text class="card-title" style="margin-bottom:0; border-bottom:none; padding-bottom:0;">Logs</text>
+      <text class="text-sm text-muted" bindtap="onRefreshLogs">Refresh</text>
+    </view>
+
+    <block wx:if="{{logs.length > 0}}">
+      <view wx:for="{{logs}}" wx:key="id" class="log-item">
+        <view class="flex-between">
+          <text class="log-type">{{item.action_type}}</text>
+          <text class="text-sm text-muted">{{item.timestamp}}</text>
+        </view>
+      </view>
+    </block>
+
+    <block wx:else>
+      <view class="empty-state">No logs available</view>
+    </block>
+  </view>
+</view>

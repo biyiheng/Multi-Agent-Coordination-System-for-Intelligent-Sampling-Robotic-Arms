@@ -23,6 +23,29 @@ logger = get_logger(__name__)
 LINK_RADIUS = 25.0  # mm
 SAFETY_MARGIN = 10.0  # mm
 
+# =============================================================================
+# Round 12: canonical collision-boundary convention.
+# Shared across training (data_generator + model_trainer) and ALL deployment
+# agents, guaranteeing training <-> deployment consistency:
+#     clearance = min_dist - (radius + COLLISION_CLEARANCE_MM)
+#     collision  <=>  clearance < 0   (i.e. min_dist < radius + COLLISION_CLEARANCE_MM)
+# =============================================================================
+COLLISION_CLEARANCE_MM = 30.0
+
+
+def clearance(dist_mm: float, radius_mm: float) -> float:
+    """Net clearance (mm). Negative => inside the collision boundary.
+
+    Mirrors the training rule used by the Round 12 collision model
+    (clearance = min_dist - (radius + 30)).
+    """
+    return dist_mm - (radius_mm + COLLISION_CLEARANCE_MM)
+
+
+def is_collision(dist_mm: float, radius_mm: float) -> bool:
+    """True if `dist_mm` is within `radius_mm + clearance` of the obstacle."""
+    return clearance(dist_mm, radius_mm) < 0.0
+
 
 # ---------------------------------------------------------------------------
 # AABB Class

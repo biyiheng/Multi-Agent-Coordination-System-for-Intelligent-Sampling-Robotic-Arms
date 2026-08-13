@@ -90,17 +90,18 @@ services:
     image: sampling-arm:${IMAGE_TAG:-latest}
     container_name: sampling-arm-cloud-sync
     restart: unless-stopped
-    command: python -c "
-import asyncio, time, logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger('cloud-sync')
-logger.info('Cloud sync service started')
-async def sync():
-    while True:
-        logger.debug('Cloud sync tick')
-        await asyncio.sleep(60)
-asyncio.run(sync())
-"
+    command: |
+      python -c "
+      import asyncio, time, logging
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger('cloud-sync')
+      logger.info('Cloud sync service started')
+      async def sync():
+          while True:
+              logger.debug('Cloud sync tick')
+              await asyncio.sleep(60)
+      asyncio.run(sync())
+      "
     volumes:
       - ./data:/app/rpi_control/data
       - ./config:/app/rpi_control/config:ro
@@ -125,7 +126,7 @@ asyncio.run(sync())
       dockerfile: Dockerfile
     image: sampling-arm:${IMAGE_TAG:-latest}
     container_name: sampling-arm-trainer
-    command: python -m training.run_training --rounds 1
+    command: python -m rpi_control.training.run_training --rounds 1
     volumes:
       - ./data:/app/rpi_control/data
       - ./models:/app/rpi_control/models
@@ -148,7 +149,7 @@ asyncio.run(sync())
       dockerfile: Dockerfile
     image: sampling-arm:${IMAGE_TAG:-latest}
     container_name: sampling-arm-loop-trainer
-    command: python -m training.run_training --loop --loop-iterations ${LOOP_ITERATIONS:-10} --rounds 1
+    command: python -m rpi_control.training.run_training --loop --loop-iterations ${LOOP_ITERATIONS:-10} --rounds 1
     volumes:
       - ./data:/app/rpi_control/data
       - ./models:/app/rpi_control/models

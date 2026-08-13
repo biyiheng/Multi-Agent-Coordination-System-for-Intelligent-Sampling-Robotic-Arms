@@ -1,0 +1,76 @@
+/* pages/index/index.wxss - Dashboard styles */
+
+.header {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  margin: -20rpx -20rpx 20rpx -20rpx;
+  padding: 40rpx 30rpx 30rpx;
+  color: #ffffff;
+}
+
+.header-title {
+  font-size: 40rpx;
+  font-weight: 700;
+  margin-bottom: 12rpx;
+}
+
+.header-status {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.status-dot {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+}
+
+.status-dot.connected {
+  background: #07C160;
+  box-shadow: 0 0 8rpx rgba(7, 193, 96, 0.5);
+}
+
+.status-dot.disconnected {
+  background: #FA5151;
+  box-shadow: 0 0 8rpx rgba(250, 81, 81, 0.5);
+}
+
+.sensor-item {
+  padding: 20rpx;
+  background: #f8f9fa;
+  border-radius: 12rpx;
+  text-align: center;
+}
+
+.sensor-label {
+  display: block;
+  font-size: 24rpx;
+  color: #999999;
+  margin-bottom: 8rpx;
+}
+
+.sensor-value {
+  display: block;
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333333;
+}
+
+.task-item {
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.task-item:last-child {
+  border-bottom: none;
+}
+
+.task-name {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #333333;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

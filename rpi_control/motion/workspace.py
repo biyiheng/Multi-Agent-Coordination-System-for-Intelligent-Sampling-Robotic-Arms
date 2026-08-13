@@ -8,6 +8,7 @@ TSP-based sampling order optimization.
 
 import math
 import random
+from functools import lru_cache
 from typing import List, Optional, Tuple
 
 import numpy as np
@@ -96,32 +97,97 @@ def is_point_reachable(
     y: float,
     z: float,
     joint_limits: Optional[List[Tuple[float, float]]] = None,
+    tolerance_mm: float = 1.5,
 ) -> bool:
     """
     Determine if a point (x, y, z) is within the robot's reachable workspace.
 
-    Uses a geometric approach: the point must be within the spherical shell
-    defined by the arm's minimum and maximum reach.
+    Position-reachability must NOT depend on a fixed end-effector orientation:
+    a position is reachable iff *some* orientation can place the end-effector
+    there.  The arm is axisymmetric about the base Z axis (joint 0 = base yaw),
+    so reachability of (x, y, z) is fully determined by the polar radius
+    r = sqrt(x^2 + y^2) and height z.  We precompute the reachable (r, z)
+    envelope by a structured sweep of the in-plane joints and test membership
+    in O(1).
 
     Args:
         x: X coordinate in mm.
         y: Y coordinate in mm.
         z: Z coordinate in mm.
-        joint_limits: Joint angle limits.
+        joint_limits: Joint angle limits. If provided (non-default), falls back
+            to an IK-based check because the cached envelope is built for the
+            default limits.
+        tolerance_mm: Membership tolerance at the envelope boundary.
 
     Returns:
         True if the point is reachable.
     """
-    from .kinematics import inverse_kinematics
+    if joint_limits is not None:
+        # Non-default limits: cached envelope not applicable; fall back to IK.
+        from .kinematics import inverse_kinematics
 
-    # Simple geometric check first
-    target_pose = np.array([x, y, z, 0.0, 0.0, 0.0])
+        target_pose = np.array([x, y, z, 0.0, 0.0, 0.0])
+        try:
+            return len(inverse_kinematics(target_pose, joint_limits=joint_limits)) > 0
+        except Exception:
+            return False
 
-    try:
-        solutions = inverse_kinematics(target_pose, joint_limits=joint_limits)
-        return len(solutions) > 0
-    except Exception:
+    r = math.hypot(x, y)
+    z_min, bin_size, r_min, r_max = _radial_reach_bounds()
+    idx = int((z - z_min) / bin_size)
+    if idx < 0 or idx >= len(r_min):
         return False
+    return (r_min[idx] - tolerance_mm) <= r <= (r_max[idx] + tolerance_mm)
+
+
+@lru_cache(maxsize=1)
+def _radial_reach_bounds(resolution: int = 60, bin_size_mm: float = 2.0):
+    """Build the axisymmetric reachable (r, z) envelope of the arm.
+
+    Joint 0 (base yaw) makes the workspace a solid of revolution about the base
+    Z axis, so position-reachability of (x, y, z) is determined by
+    (r, z) = (sqrt(x^2 + y^2), z).  Fixing base yaw, wrist roll and gripper to 0
+    and sweeping the in-plane joints (1, 2, 3) over their full limits enumerates
+    the complete planar reachable region.  Returns
+    ``(z_min, bin_size_mm, r_min, r_max)`` where ``r_min[i]``/``r_max[i]`` bound
+    the reachable radius for the z-bin ``i``, giving O(1) membership queries.
+
+    Returns:
+        Tuple of (z_min, bin_size, r_min_list, r_max_list).
+    """
+    points = []
+    for j1 in np.linspace(*DEFAULT_JOINT_LIMITS[1], resolution):
+        for j2 in np.linspace(*DEFAULT_JOINT_LIMITS[2], resolution):
+            for j3 in np.linspace(*DEFAULT_JOINT_LIMITS[3], resolution):
+                angles = [0.0, j1, j2, j3, 0.0, 0.0]
+                try:
+                    T, _ = forward_kinematics(angles)
+                    x, y, z = T[:3, 3]
+                    points.append((float(math.hypot(x, y)), float(z)))
+                except Exception:
+                    continue
+
+    if not points:
+        return 0.0, bin_size_mm, [], []
+
+    z_min = min(p[1] for p in points)
+    z_max = max(p[1] for p in points)
+    nbins = max(1, int((z_max - z_min) / bin_size_mm) + 1)
+    r_min = [float("inf")] * nbins
+    r_max = [float("-inf")] * nbins
+    for r, z in points:
+        idx = int((z - z_min) / bin_size_mm)
+        idx = min(max(idx, 0), nbins - 1)
+        if r < r_min[idx]:
+            r_min[idx] = r
+        if r > r_max[idx]:
+            r_max[idx] = r
+
+    logger.info(
+        f"Built radial reach envelope: z∈[{z_min:.1f},{z_max:.1f}]mm, "
+        f"{nbins} bins of {bin_size_mm}mm"
+    )
+    return z_min, bin_size_mm, r_min, r_max
 
 
 # ---------------------------------------------------------------------------

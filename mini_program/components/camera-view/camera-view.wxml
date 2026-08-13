@@ -1,0 +1,22 @@
+<!-- components/camera-view/camera-view.wxml - Camera view component -->
+<view class="camera-view">
+  <image
+    class="camera-image"
+    src="{{snapshotUrl}}"
+    mode="aspectFit"
+    bindtap="onTap"
+    binderror="onImageError"
+  />
+  <view class="camera-overlay">
+    <view class="camera-info">
+      <text class="camera-fps">{{fps}} FPS</text>
+      <text class="camera-resolution">{{resolution}}</text>
+    </view>
+    <view class="camera-controls">
+      <button class="btn btn-small btn-primary" bindtap="onRefresh">Refresh</button>
+      <button class="btn btn-small btn-outline" bindtap="onAutoRefresh">
+        {{autoRefresh ? 'Pause' : 'Auto'}}
+      </button>
+    </view>
+  </view>
+</view>

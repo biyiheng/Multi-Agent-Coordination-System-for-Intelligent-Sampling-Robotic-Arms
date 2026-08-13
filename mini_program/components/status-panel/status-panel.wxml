@@ -1,0 +1,50 @@
+<!-- components/status-panel/status-panel.wxml - Status display panel -->
+<view class="status-panel">
+  <!-- Safety Level Indicator -->
+  <view class="safety-indicator safety-{{safetyStatus.level}}">
+    <view class="safety-badge">
+      <text class="safety-text">{{safetyStatus.level}}</text>
+    </view>
+  </view>
+
+  <!-- Joint Positions -->
+  <view class="status-section">
+    <text class="section-title">Joint Positions</text>
+    <view class="joint-grid">
+      <view wx:for="{{jointDisplay}}" wx:key="index" class="joint-cell">
+        <text class="joint-name">J{{index + 1}}</text>
+        <text class="joint-angle">{{item}}°</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- End-Effector Pose -->
+  <view class="status-section">
+    <text class="section-title">Pose</text>
+    <view class="pose-row">
+      <view class="pose-cell">
+        <text class="pose-label">X</text>
+        <text class="pose-value">{{eePose.x}}mm</text>
+      </view>
+      <view class="pose-cell">
+        <text class="pose-label">Y</text>
+        <text class="pose-value">{{eePose.y}}mm</text>
+      </view>
+      <view class="pose-cell">
+        <text class="pose-label">Z</text>
+        <text class="pose-value">{{eePose.z}}mm</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- Gripper -->
+  <view class="status-section">
+    <text class="section-title">Gripper</text>
+    <view class="flex-between">
+      <text class="text-sm">State: {{armStatus.gripper_state || 'unknown'}}</text>
+      <view class="tag {{armStatus.is_moving ? 'tag-running' : 'tag-idle'}}">
+        {{armStatus.is_moving ? 'Moving' : 'Idle'}}
+      </view>
+    </view>
+  </view>
+</view>

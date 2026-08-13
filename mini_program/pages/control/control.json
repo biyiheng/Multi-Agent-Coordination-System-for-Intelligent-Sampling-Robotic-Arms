@@ -1,0 +1,7 @@
+{
+  "usingComponents": {
+    "joystick": "/components/joystick/joystick",
+    "servo-slider": "/components/servo-slider/servo-slider"
+  },
+  "navigationBarTitleText": "Manual Control"
+}

@@ -1,0 +1,17 @@
+<!-- components/joystick/joystick.wxml - Virtual joystick component -->
+<view class="joystick-container">
+  <view
+    class="joystick-base"
+    bindtouchstart="onTouchStart"
+    bindtouchmove="onTouchMove"
+    bindtouchend="onTouchEnd"
+  >
+    <view class="joystick-knob" style="transform: translate({{knobX}}px, {{knobY}}px);"></view>
+  </view>
+  <view class="joystick-labels">
+    <text class="joystick-label left">-X</text>
+    <text class="joystick-label right">+X</text>
+    <text class="joystick-label top">+Y</text>
+    <text class="joystick-label bottom">-Y</text>
+  </view>
+</view>

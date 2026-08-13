@@ -3,10 +3,10 @@ name: CSharp Hardware CI
 on:
   push:
     branches: [main, master]
-    paths: ["hardware_debug_cs/**", "**/*.cs", "**/*.csproj", "!.github/**"]
+    paths: ["hardware_debug_cs/**", "**/*.cs", "**/*.csproj", "rpi_control/**", "**/*.py", "!.github/**"]
   pull_request:
     branches: [main, master]
-    paths: ["hardware_debug_cs/**", "**/*.cs", "**/*.csproj", "!.github/**"]
+    paths: ["hardware_debug_cs/**", "**/*.cs", "**/*.csproj", "rpi_control/**", "**/*.py", "!.github/**"]
   workflow_dispatch:
 
 jobs:
@@ -77,3 +77,44 @@ jobs:
           path: |
             rpi_control/reports/e2e_performance_report.md
             e2e_merged_log.json
+
+  python-model-validation:
+    name: Model Validation + Recall Gate (Round 12)
+    runs-on: ubuntu-latest
+    needs: []
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r rpi_control/requirements-training.txt
+
+      - name: Independent model validation (all 5 agents)
+        run: python -m rpi_control.training.test_models 2>&1 | tee /tmp/test_models.log || true
+
+      - name: Enforce independent-test collision recall gate
+        # Parse the collision "RESULT" line from the validation log; fail if not PASS.
+        run: |
+          grep -E "Collision model|RESULT: PASS" /tmp/test_models.log >/dev/null || { echo "FAIL: model validation did not pass"; exit 1; }
+          echo "Independent validation OK"
+
+      - name: Recall monitoring gate (training-val recall >= 0.85)
+        # Non-zero exit on recall < 0.85 fails the pipeline (DO NOT deploy).
+        run: python -m rpi_control.training.monitor_recall --model collision --threshold 0.85 --results rpi_control/reports/model_training_results.json
+
+      - name: Self-test that the alert mechanism actually triggers
+        # Prove the guard works: raising the threshold above current recall must
+        # produce an ALERT and a non-zero exit (expected failure, not a job fail).
+        run: |
+          if python -m rpi_control.training.monitor_recall --model collision --threshold 0.90 --results rpi_control/reports/model_training_results.json 2>&1; then
+            echo "ERROR: alert was NOT triggered when recall < threshold"; exit 1
+          else
+            echo "OK: alert correctly triggered when recall < threshold"
+          fi

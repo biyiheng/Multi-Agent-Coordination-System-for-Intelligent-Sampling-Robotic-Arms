@@ -1398,7 +1398,7 @@ class ModelTrainer:
         Returns:
             ModelMetrics with evaluation results.
         """
-        print("\n  Training Collision Detection Model (Round 9: 7-ensemble, diverse negatives)...")
+        print("\n  Training Collision Detection Model (Round 12: rule-aligned boundary, 19 features)...")
 
         # --- Load real multi-obstacle collision data ---
         real_data = self._load_data("multi_obstacle_collision.json")
@@ -1414,14 +1414,21 @@ class ModelTrainer:
             joints = sample.get("joint_positions", [])
             if len(joints) < 6:
                 continue
-            # Extract obstacle distances and positions
+            # Extract obstacle distances and positions. Real generator stores
+            # obstacle_position = [x, y, z, radius]; keep the radius (4th element)
+            # so the variable collision boundary is available as a feature.
             obs_dists = []
             obs_positions = []
             for obs in obstacles:
                 d = obs.get("distance", obs.get("distance_mm", np.random.uniform(0, 200)))
                 pos = obs.get("position", [0, 0, 0])
                 obs_dists.append(d)
-                obs_positions.append(pos[:3] if len(pos) >= 3 else [0, 0, 0])
+                if len(pos) >= 4:
+                    obs_positions.append(pos[:4])
+                elif len(pos) >= 3:
+                    obs_positions.append(pos[:3] + [35.0])  # default mid-range radius
+                else:
+                    obs_positions.append([0, 0, 0, 35.0])
             real_samples.append({
                 "obstacle_dists": obs_dists,
                 "obstacle_positions": obs_positions,
@@ -1429,31 +1436,44 @@ class ModelTrainer:
                 "label": 1.0 if sample.get("collision_detected", sample.get("has_collision", False)) else 0.0,
             })
 
-        # --- Augment with synthetic edge cases (Round 7: 5000, more hard negatives) ---
+        # --- Augment with synthetic edge cases (Round 12: 5000, rule-aligned) ---
+        # Round 12 FIX: The previous synthetic rule labeled collision when
+        # min_dist < 25mm, but the REAL generator (data_generator
+        # generate_multi_obstacle_collision) labels collision when
+        # min_dist < radius + 30 with radius ~ U(10,60), i.e. a VARIABLE boundary
+        # in [40, 90]mm. That mismatch taught the model a ~25mm collision
+        # boundary, so real collisions (40-90mm) were scored safe -> recall ~0.30.
+        # Now we sample a representative obstacle radius per scene, label with the
+        # SAME variable boundary, and store the radius so the model can learn it.
         n_synthetic = 5000
         synthetic_samples = []
         for _ in range(n_synthetic):
             n_obs = np.random.randint(1, 6)
+            radius = np.random.uniform(10, 60)  # representative obstacle radius (mm)
             obs_dists = []
             obs_positions = []
             for _ in range(n_obs):
-                # Round 7: More hard negatives (30-80mm, near miss but not collision)
                 if np.random.random() < 0.35:
                     obs_dists.append(np.random.uniform(30, 80))  # Hard negative
                 else:
                     obs_dists.append(np.random.uniform(0, 300))
+                # position = [x, y, z, radius]; radius stored as 4th element so the
+                # feature extractor can read the variable collision boundary.
                 obs_positions.append([
                     np.random.uniform(-200, 200),
                     np.random.uniform(-200, 200),
                     np.random.uniform(-100, 100),
+                    radius,
                 ])
+            # Label with the real variable boundary: collision iff closest obstacle
+            # is within its radius + 30mm clearance.
+            label = 1.0 if min(obs_dists) < radius + 30 else 0.0
             synthetic_samples.append({
                 "obstacle_dists": obs_dists,
                 "obstacle_positions": obs_positions,
                 "joint_velocities": [np.random.uniform(0, 500) for _ in range(6)],
                 "joint_positions": [np.random.uniform(-180, 180) for _ in range(6)],
-                # Round 7: More precise labeling - collision only if very close
-                "label": 1.0 if min(obs_dists) < 25 and np.random.random() > 0.2 else 0.0,
+                "label": float(label),
             })
 
         all_samples = real_samples + synthetic_samples
@@ -1516,6 +1536,18 @@ class ModelTrainer:
             effective_vel = max(max_vel, 1.0)
             ttc = min_dist / effective_vel
 
+            # Round 12: Effective obstacle radius of the CLOSEST obstacle.
+            # Real labeling uses collision iff min_dist < radius + 30, so the
+            # radius exposes the (variable) collision boundary to the model.
+            if obs_positions and obs_dists:
+                closest_idx = int(np.argmin(obs_dists))
+                eff_radius = obs_positions[closest_idx][3] \
+                    if len(obs_positions[closest_idx]) >= 4 else 35.0
+            else:
+                eff_radius = 35.0
+            # Clearance margin: negative => inside the collision boundary.
+            clearance = min_dist - (eff_radius + 30.0)
+
             # Combined risk score
             dist_risk = 1.0 / (1.0 + min_dist / 50.0)
             vel_risk = min(1.0, max_vel / 500.0)
@@ -1533,6 +1565,9 @@ class ModelTrainer:
                 approach_angle,
                 ttc,
                 combined_risk,
+                # Round 12: variable-boundary features
+                eff_radius,
+                clearance,
                 # Round 6: New kinematic features
                 joint_center_dist,
                 vel_dist_ratio,
@@ -1547,31 +1582,64 @@ class ModelTrainer:
         X = np.array(X_list, dtype=np.float32)
         y = np.array(y_list, dtype=np.float32).reshape(-1, 1)
 
+        # real_samples come first in all_samples, then synthetic_samples.
+        n_real = len(real_samples)
+        n_synth = len(synthetic_samples)
+
+        # Split the REAL rows into a train/val holdout (val is NEVER seen by
+        # training), so the decision threshold can be tuned on a PURE-REAL set
+        # that matches the deployment/test distribution (~2.5% collision).
+        rng_split = np.random.default_rng(123)
+        real_idx = np.arange(n_real)
+        rng_split.shuffle(real_idx)
+        n_val_real = max(1, int(n_real * 0.15))
+        val_real_idx = real_idx[:n_val_real]
+        train_real_idx = real_idx[n_val_real:]
+
+        val_rows = val_real_idx.tolist()
+        train_rows = train_real_idx.tolist() + list(range(n_real, n_real + n_synth))
+
+        # Pure-real validation holdout for threshold tuning
+        X_val = X[val_rows]
+        y_val = y[val_rows]
+        # Training set: real_train + synthetic
+        X_train_all = X[train_rows]
+        y_train_all = y[train_rows]
+
         n_features = X.shape[1]
-        n_collision = int(np.sum(y))
-        n_safe = len(y) - n_collision
-        print(f"    Features: {n_features}, samples: {len(X_list)} "
-              f"(real={len(real_samples)}, synthetic={len(synthetic_samples)})")
-        print(f"    Labels: collision={n_collision}, safe={n_safe} "
-              f"({n_collision/len(y)*100:.1f}% collision)")
+        n_collision = int(np.sum(y_train_all))
+        n_safe = len(y_train_all) - n_collision
+        n_coll_val = int(np.sum(y_val))
+        print(f"    Features: {n_features}, train samples: {len(X_train_all)} "
+              f"(real_train={len(train_real_idx)}, synthetic={len(synthetic_samples)})")
+        print(f"    Train labels: collision={n_collision}, safe={n_safe} "
+              f"({n_collision/len(y_train_all)*100:.1f}% collision)")
+        print(f"    Val (pure real) labels: collision={n_coll_val} "
+              f"({n_coll_val/len(y_val)*100:.2f}% collision)")
 
-        # --- Handle class imbalance: oversample minority class ---
-        if n_collision > 0 and n_safe > 0:
-            collision_idx = np.where(y.flatten() == 1)[0]
-            safe_idx = np.where(y.flatten() == 0)[0]
-            # Oversample collision class to at least 30% of total
+        # Normalize on the RAW training distribution; apply to both train and val.
+        # Oversampling is applied to the TRAIN set ONLY, so the pure-real val set
+        # keeps the realistic ~2.5% collision rate for threshold tuning.
+        X_norm, X_mean, X_std = self._normalize(X_train_all)
+        X_train = X_norm
+        y_train = y_train_all
+        X_val = (X_val - X_mean) / (X_std + 1e-8)
+
+        # --- Handle class imbalance: oversample minority class (train only) ---
+        n_coll_train = int(np.sum(y_train))
+        n_safe_train = int(len(y_train) - n_coll_train)
+        if n_coll_train > 0 and n_safe_train > 0:
+            collision_idx = np.where(y_train.flatten() == 1)[0]
+            # Oversample collision class to at least 30% of train total
             target_collision_ratio = 0.30
-            target_collision_count = int(n_safe * target_collision_ratio / (1 - target_collision_ratio))
-            if target_collision_count > n_collision:
-                n_oversample = target_collision_count - n_collision
+            target_collision_count = int(n_safe_train * target_collision_ratio / (1 - target_collision_ratio))
+            if target_collision_count > n_coll_train:
+                n_oversample = target_collision_count - n_coll_train
                 oversample_idx = np.random.choice(collision_idx, n_oversample, replace=True)
-                X = np.vstack([X, X[oversample_idx]])
-                y = np.vstack([y, y[oversample_idx]])
-                print(f"    Oversampled collision: {n_collision} → {n_collision + n_oversample} "
-                      f"({(n_collision + n_oversample)/len(y)*100:.1f}% of total)")
-
-        X_norm, X_mean, X_std = self._normalize(X)
-        X_train, X_val, y_train, y_val = self._split_data(X_norm, y, val_ratio=0.15)
+                X_train = np.vstack([X_train, X_train[oversample_idx]])
+                y_train = np.vstack([y_train, y_train[oversample_idx]])
+                print(f"    Oversampled collision (train only): {n_coll_train} → {n_coll_train + n_oversample} "
+                      f"({(n_coll_train + n_oversample)/len(y_train)*100:.1f}% of train)")
 
         # Round 9: 7-model ensemble for more robust voting (precision improvement)
         # n_ensemble passed as parameter for multi-round tuning
@@ -1612,26 +1680,31 @@ class ModelTrainer:
 
         np.random.seed(None)
 
-        # Ensemble prediction (average)
-        y_pred_prob = np.zeros_like(y_val)
-        for nn in ensemble_models:
-            y_pred_prob += nn.predict(X_val)
-        y_pred_prob /= n_ensemble
+        # Use the SAME model that is persisted for threshold tuning, so the
+        # saved model's optimal threshold matches inference. (Naively averaging
+        # weights/biases/BN stats across ensemble members collapses the network
+        # and is NOT used here; the ensemble is retained as training diversity,
+        # but the persisted + tuned model is ensemble_models[0].)
+        saved_model = ensemble_models[0]
+        y_pred_prob = saved_model.predict(X_val)
 
-        # Find optimal threshold
-        best_f1 = 0.0
+        # Find the decision threshold on the RAW (imbalanced) validation set.
+        # The pure-real val (~2.5% collision) matches the deployment distribution.
+        # Safety-critical: require recall >= 0.85 (catch real collisions) and
+        # maximize precision subject to that recall floor. With the variable-
+        # boundary features the model separates well, so a moderate threshold
+        # meets both; no need to force threshold -> 0.
         best_threshold = 0.5
-        for thr in np.arange(0.3, 0.8, 0.05):
+        best_score = -1.0
+        for thr in np.arange(0.02, 0.9, 0.02):
             y_pred_t = (y_pred_prob > thr).astype(float)
             tp = np.sum((y_pred_t == 1) & (y_val == 1))
-            tn = np.sum((y_pred_t == 0) & (y_val == 0))
             fp = np.sum((y_pred_t == 1) & (y_val == 0))
             fn = np.sum((y_pred_t == 0) & (y_val == 1))
             prec = tp / (tp + fp) if (tp + fp) > 0 else 0
             rec = tp / (tp + fn) if (tp + fn) > 0 else 0
-            f1 = 2 * prec * rec / (prec + rec) if (prec + rec) > 0 else 0
-            if f1 > best_f1:
-                best_f1 = f1
+            if rec >= 0.85 and prec > best_score:
+                best_score = prec
                 best_threshold = thr
 
         y_pred = (y_pred_prob > best_threshold).astype(float)
@@ -1646,7 +1719,7 @@ class ModelTrainer:
         recall = tp / (tp + fn) if (tp + fn) > 0 else 0
         f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0
 
-        ensemble_models[0].save(str(self.model_dir / "collision_model.pkl"))
+        saved_model.save(str(self.model_dir / "collision_model.pkl"))
 
         # Save feature metadata
         collision_meta = {
@@ -1656,6 +1729,7 @@ class ModelTrainer:
                 "n_obstacles", "n_close", "n_very_close",
                 "max_vel", "mean_vel", "approach_angle",
                 "ttc", "combined_risk",
+                "eff_radius", "clearance",
                 "joint_center_dist", "vel_dist_ratio",
                 "angular_spread", "close_ratio", "risk_velocity_product",
             ],

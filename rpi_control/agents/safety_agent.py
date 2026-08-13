@@ -24,6 +24,7 @@ from typing import Any, Deque, Dict, List, Optional, Set, Tuple
 import numpy as np
 
 from .base_agent import BaseAgent, AgentConfig, validate_state, log_execution
+from ..motion.collision import COLLISION_CLEARANCE_MM, clearance, is_collision
 
 
 class SafetyState(Enum):
@@ -135,12 +136,45 @@ class SafetyAgent(BaseAgent):
         state["safety_checks"] = checks
         state["safety_state"] = self.safety_state.value
 
-        # If ESTOP, trigger emergency
-        if self.safety_state == SafetyState.ESTOP:
-            await self.emergency_stop()
+        # If DANGER or ESTOP, trigger emergency stop.
+        # 修复: DANGER 态此前不会自动升级为实际急停 (_update_safety_state 只置
+        # DANGER, process 只对 ESTOP 调用 emergency_stop), 导致检测到心跳丢失/
+        # 关节越限/碰撞等危险条件后机械臂并未真正停车。此处将 DANGER 一并纳入
+        # 急停触发路径, 使危险条件可靠升级为 ESTOP 并下发急停指令。
+        if self.safety_state in (SafetyState.DANGER, SafetyState.ESTOP):
+            danger_reasons = self._collect_danger_reasons(checks)
+            await self.emergency_stop(reason=danger_reasons)
             state["estop_triggered"] = True
 
         return state
+
+    def _collect_danger_reasons(self, checks: Dict[str, Any]) -> str:
+        """汇总触发急停的具体危险条件, 便于现场排查.
+
+        将本次轮询中导致 DANGER 的具体检查项与关键指标拼接为可读字符串,
+        随急停日志与事件一并输出。
+        """
+        reasons: List[str] = []
+        for check_name, result in checks.items():
+            if not isinstance(result, dict) or result.get("ok", True):
+                continue
+            if check_name == "heartbeat":
+                reasons.append(
+                    f"heartbeat loss (age={result.get('last_heartbeat_age_ms')}ms "
+                    f"> timeout={self.heartbeat_timeout_ms}ms)")
+            elif check_name in ("joint_limits", "workspace") and result.get("violations"):
+                for v in result["violations"]:
+                    reasons.append(
+                        f"{check_name} violation: {v.get('joint', v.get('axis'))} "
+                        f"{v.get('type')} value={v.get('value')} limit={v.get('limit')}")
+            elif check_name == "collision":
+                for r in result.get("risks", []):
+                    if r.get("severity") == "danger":
+                        reasons.append(
+                            f"collision danger: obstacle={r.get('obstacle')} "
+                            f"dist={r.get('distance_mm')}mm "
+                            f"min_safe={r.get('min_safe_distance_mm')}mm")
+        return "; ".join(reasons) if reasons else f"state={self.safety_state.value}"
 
     # =========================================================================
     # Main Safety Monitor
@@ -314,14 +348,20 @@ class SafetyAgent(BaseAgent):
         self,
         planned_path: List[Dict[str, Any]],
         obstacles: List[Dict[str, Any]],
-        safety_margin_mm: float = 30.0,
+        safety_margin_mm: float = COLLISION_CLEARANCE_MM,
     ) -> Dict[str, Any]:
         """Check if a planned path passes too close to known obstacles.
+
+        Uses the Round 12 canonical collision-boundary convention shared with
+        training and the rest of the deployment stack:
+            clearance = dist - (radius + COLLISION_CLEARANCE_MM); < 0 => collision.
 
         Args:
             planned_path: List of waypoint dicts with 'position' keys.
             obstacles: List of obstacle dicts with 'position' and 'radius_mm' keys.
-            safety_margin_mm: Minimum allowed distance to obstacles.
+            safety_margin_mm: Minimum allowed distance to obstacles (defaults to
+                the shared COLLISION_CLEARANCE_MM = 30.0 to stay aligned with the
+                trained collision model).
 
         Returns:
             Dict with collision risks.
@@ -345,12 +385,14 @@ class SafetyAgent(BaseAgent):
                 dz = wp_pos[2] - obs_pos[2]
                 dist = (dx**2 + dy**2 + dz**2) ** 0.5
 
+                # Shared boundary: collision iff dist < radius + clearance
                 min_safe_dist = obs_radius + safety_margin_mm
-                if dist < min_safe_dist:
+                if is_collision(dist, obs_radius) or dist < min_safe_dist:
                     risks.append({
                         "waypoint_index": i,
                         "obstacle": obs.get("name", "unknown"),
                         "distance_mm": round(dist, 1),
+                        "clearance_mm": round(clearance(dist, obs_radius), 1),
                         "min_safe_distance_mm": min_safe_dist,
                         "severity": "danger" if dist < obs_radius else "warning",
                     })
@@ -463,10 +505,14 @@ class SafetyAgent(BaseAgent):
     # Emergency Actions
     # =========================================================================
 
-    async def emergency_stop(self) -> bool:
+    async def emergency_stop(self, reason: Optional[str] = None) -> bool:
         """Trigger an immediate emergency stop.
 
         Sends ESTOP command to STM32, sets safety state, and logs the event.
+
+        Args:
+            reason: 触发急停的具体原因 (由 process 传入的危险条件摘要), 用于
+                    现场排查; 为空时回退到安全状态描述.
 
         Returns:
             True if stop was triggered.
@@ -478,12 +524,14 @@ class SafetyAgent(BaseAgent):
         self.safety_state = SafetyState.ESTOP
         self._estop_active = True
 
-        self.log("EMERGENCY STOP TRIGGERED!", 50)
+        detail = reason or f"Safety state: {self.safety_state.value}"
+        self.log(f"EMERGENCY STOP TRIGGERED! reason: {detail}", 50)
 
         event = {
             "timestamp": time.time(),
             "type": "estop",
-            "reason": f"Safety state: {self.safety_state.value}",
+            "reason": detail,
+            "safety_state": self.safety_state.value,
         }
         self._safety_events.append(event)
 

@@ -1,0 +1,22 @@
+<!-- components/servo-slider/servo-slider.wxml - Servo control slider -->
+<view class="servo-slider">
+  <view class="servo-header">
+    <text class="servo-label">{{label}}</text>
+    <text class="servo-value">{{displayAngle}}° ({{value}})</text>
+  </view>
+  <slider
+    min="{{min}}"
+    max="{{max}}"
+    value="{{value}}"
+    step="{{step}}"
+    activeColor="#07C160"
+    backgroundColor="#e8e8e8"
+    block-size="24"
+    bindchange="onSliderChange"
+    bindchanging="onSliderChanging"
+  />
+  <view class="servo-range">
+    <text class="text-sm text-muted">{{min}} (0°)</text>
+    <text class="text-sm text-muted">{{max}} (180°)</text>
+  </view>
+</view>

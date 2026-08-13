@@ -1,0 +1,103 @@
+<!-- pages/index/index.wxml - Home/Dashboard page -->
+<view class="container">
+  <!-- Header -->
+  <view class="header">
+    <view class="header-title">Intelligent Sampling Arm</view>
+    <view class="header-status">
+      <view class="status-dot {{connected ? 'connected' : 'disconnected'}}"></view>
+      <text class="text-sm text-muted">{{connected ? 'Connected' : 'Disconnected'}}</text>
+    </view>
+  </view>
+
+  <!-- Arm Status Card -->
+  <view class="card">
+    <view class="card-title">Arm Status</view>
+    <status-panel
+      arm-status="{{armStatus}}"
+      sensor-data="{{sensorData}}"
+      safety-status="{{safetyStatus}}"
+    />
+  </view>
+
+  <!-- Quick Actions -->
+  <view class="card">
+    <view class="card-title">Quick Actions</view>
+    <view class="grid-3">
+      <button class="btn btn-primary btn-small" bindtap="onOrigin" loading="{{loading}}">
+        Home
+      </button>
+      <button class="btn btn-warning btn-small" bindtap="onStop" loading="{{loading}}">
+        Stop
+      </button>
+      <button class="btn btn-danger btn-small" bindtap="onEstop" loading="{{loading}}">
+        E-Stop
+      </button>
+    </view>
+  </view>
+
+  <!-- Sensor Data -->
+  <view class="card">
+    <view class="card-title">Sensor Readings</view>
+    <view class="grid-2">
+      <view class="sensor-item">
+        <text class="sensor-label">Temperature</text>
+        <text class="sensor-value">{{sensorData.temperature}}°C</text>
+      </view>
+      <view class="sensor-item">
+        <text class="sensor-label">Humidity</text>
+        <text class="sensor-value">{{sensorData.humidity}}%</text>
+      </view>
+      <view class="sensor-item">
+        <text class="sensor-label">Distance</text>
+        <text class="sensor-value">{{sensorData.distance}}mm</text>
+      </view>
+      <view class="sensor-item">
+        <text class="sensor-label">Voltage</text>
+        <text class="sensor-value">{{sensorData.voltage}}V</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- Recent Tasks -->
+  <view class="card">
+    <view class="flex-between mb-20">
+      <text class="card-title" style="margin-bottom:0; border-bottom:none; padding-bottom:0;">Recent Tasks</text>
+      <text class="text-sm text-muted" bindtap="onNavigateToTasks">View All ></text>
+    </view>
+
+    <block wx:if="{{recentTasks.length > 0}}">
+      <view
+        wx:for="{{recentTasks}}"
+        wx:key="id"
+        class="task-item"
+        bindtap="onTaskDetail"
+        data-id="{{item.id}}"
+      >
+        <view class="flex-between">
+          <text class="task-name">{{item.name}}</text>
+          <view class="tag tag-{{item.status}}">{{item.status}}</view>
+        </view>
+        <view class="flex-between mt-10">
+          <text class="text-sm text-muted">{{item.strategy}}</text>
+          <text class="text-sm text-muted">{{item.created_at}}</text>
+        </view>
+      </view>
+    </block>
+
+    <block wx:else>
+      <view class="empty-state">No tasks yet</view>
+    </block>
+  </view>
+
+  <!-- System Info -->
+  <view class="card">
+    <view class="flex-between">
+      <text class="text-sm text-muted">System Version</text>
+      <text class="text-sm">v1.0.0</text>
+    </view>
+    <view class="flex-between mt-10">
+      <text class="text-sm text-muted">Uptime</text>
+      <text class="text-sm">{{uptime}}</text>
+    </view>
+  </view>
+</view>

@@ -17,6 +17,9 @@ e2e_merged_log.json
 # 压力测试 / 训练 / 审计等运行时报告 (自动生成产物, 不入库)
 reports/
 
+# 固件构建产物 (OUT 目录: .o/.elf/.hex/.bin/.map)
+stm32_firmware/OUT/
+
 # OS
 .DS_Store
 Thumbs.db

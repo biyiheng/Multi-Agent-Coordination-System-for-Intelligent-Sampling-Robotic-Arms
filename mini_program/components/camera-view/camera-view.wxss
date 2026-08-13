@@ -1,0 +1,44 @@
+/* components/camera-view/camera-view.wxss - Camera view styles */
+
+.camera-view {
+  position: relative;
+  border-radius: 12rpx;
+  overflow: hidden;
+  background: #000000;
+}
+
+.camera-image {
+  width: 100%;
+  height: 400rpx;
+  display: block;
+}
+
+.camera-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16rpx;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.6));
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.camera-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.camera-fps,
+.camera-resolution {
+  font-size: 22rpx;
+  color: #ffffff;
+  opacity: 0.8;
+}
+
+.camera-controls {
+  display: flex;
+  gap: 10rpx;
+}

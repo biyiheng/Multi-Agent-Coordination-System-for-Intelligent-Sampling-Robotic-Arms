@@ -1,0 +1,6 @@
+{
+  "usingComponents": {
+    "camera-view": "/components/camera-view/camera-view"
+  },
+  "navigationBarTitleText": "Monitor"
+}
