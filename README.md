@@ -10,6 +10,8 @@
 ![License](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)
 ![Platform](https://img.shields.io/badge/Platform-Raspberry%20Pi%2FJetson%2FLinux-important?style=flat-square)
 ![CI](https://img.shields.io/badge/CI-GitHub%20Actions-brightgreen?style=flat-square)
+![Version](https://img.shields.io/badge/Version-v1.1-blueviolet?style=flat-square)
+![Tests](https://img.shields.io/badge/Tests-412%20passed-brightgreen?style=flat-square)
 
 </div>
 
@@ -17,11 +19,25 @@
 
 ## 📌 项目简介
 
-本项目是一套运行于 **Raspberry Pi / Jetson / Linux** 的智能采样机械臂综合控制系统，通过 **STM32 微控制器** 驱动六路舵机，并集成 **OpenMV / Jetson 视觉模组** 实现目标检测与位姿估计。系统采用异步事件驱动架构，支持 Docker 容器化部署与 systemd 服务管理，具备从采样规划、运动控制、力控抓取、质量评估到安全防护与云同步的完整能力链路。
+本项目是一套运行于 **Raspberry Pi / Jetson / Linux** 的智能采样机械臂综合控制系统，通过 **STM32 微控制器**驱动六路舵机，并集成 **OpenMV / Jetson 视觉模组**实现目标检测与位姿估计。系统采用异步事件驱动架构，支持 Docker 容器化部署与 systemd 服务管理，具备从采样规划、运动控制、力控抓取、质量评估到安全防护与云同步的完整能力链路。
 
 - **核心价值**：多智能体协同决策 + 工业级实时安全约束 + 循环工程持续优化
 - **运行平台**：Raspberry Pi OS (64-bit) / Jetson / Linux / Windows（仿真模式）
+- **当前版本**：v1.1（基线 v1.0）
 - **许可证**：MIT
+
+---
+
+## 🆕 v1.1 更新内容
+
+v1.1 在 v1.0 基础上完成工程化增强（详见 [18-更新报告v1.1.md](项目文档/18-更新报告v1.1.md)）：
+
+- **后台控制模块全面接入数据库**：机械臂 / 视觉 / 系统配置状态由内存改为 SQLite 持久化，服务重启自动恢复；
+- **全模块 CRUD 补齐**：用户 / 设备 / WiFi / 样本 / 系统配置 / 闭环工程 6 模型全部支持**增删改查**；
+- **闭环工程数据持久化**：新增 `SampleRepository` 与 6 个闭环工程仓储 + `/api/v1/samples`、`/api/v1/loop/*` REST 接口；
+- **App 界面美化**：统一 Material 3 主题、`SectionHeader` / `StatusCard` 复用组件、夜间模式、控制页重构；
+- **App 配置持久化**：服务端地址经 `shared_preferences` 保存，重启自动恢复；
+- **工程化落地**：本地安装 Flutter SDK，`flutter analyze` 0 error、`flutter test` UI 冒烟 6/6 通过；全量测试 **412 passed / 11 skipped / 0 failed**。
 
 ---
 
@@ -226,7 +242,7 @@ flutter build ios --release     # iOS（需 macOS）
 
 ## 📚 文档索引
 
-`项目文档/` 下提供了完整文档（01–17）：
+`项目文档/` 下提供了完整文档（01–19）：
 
 | 编号 | 文档 | 编号 | 文档 |
 |------|------|------|------|
@@ -237,18 +253,20 @@ flutter build ios --release     # iOS（需 macOS）
 | 05 | 需求清单 | 14 | 真实硬件部署操作手册 |
 | 06 | API 接口文档 | 15 | 现场工程师部署与验证操作手册 |
 | 07 | 部署操作手册 | 16 | 故障排查速查表 |
-| 08 | 验证报告 | **17** | **部署操作指南（含 App / WiFi 模块）** |
-| 09 | 部署执行清单 | | |
+| 08 | 验证报告 | 17 | 部署操作指南（含 App / WiFi 模块） |
+| 09 | 部署执行清单 | **18 / 19** | **v1.1 更新报告 / v1.1 测试报告** |
 
 ---
 
 ## 🧪 测试与质量
 
-- 覆盖：运动学、轨迹规划、碰撞检测、工作空间、力控、动力学前馈、API、安全扫描、性能基准、**极端工况压力测试**、**多端互通（鉴权/设备中心/WiFi API/WebSocket 中枢）**
+- 覆盖：运动学、轨迹规划、碰撞检测、工作空间、力控、动力学前馈、API、安全扫描、性能基准、**极端工况压力测试**、**多端互通（鉴权/设备中心/WiFi API/WebSocket 中枢）**、**数据库 CRUD（样本/闭环工程）**
 - 支持 `pytest`、`pytest-asyncio`、`pytest-cov`
 - 硬件仿真模式：无需物理硬件即可运行完整测试套件（ESP32 WiFi 自动模拟）
 - 压力测试报告：`reports/stress_test_results.json`（由 `--stress` 自动生成）
 - 多端互通测试：`python -m pytest rpi_control/tests/test_multient_interop.py -q`（10 项全过）
+- **全量回归（v1.1 实测）**：`python -m pytest rpi_control/tests -q` → **412 passed / 11 skipped / 0 failed**
+- **App 验证（v1.1 实测）**：`flutter analyze` 0 error、`flutter test`（UI 冒烟）6/6 通过，详见 [19-测试报告v1.1.md](项目文档/19-测试报告v1.1.md)
 
 ---
 

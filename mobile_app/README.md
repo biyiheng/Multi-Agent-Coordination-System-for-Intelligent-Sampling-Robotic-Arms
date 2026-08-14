@@ -11,6 +11,8 @@
 - **WiFi 配网**: 扫描周边 AP / STA 连接 / AP 创建热点 / 状态查询
 - **多端互通**: 通过 `/ws/hub` 与 小程序/Web/硬件端 数据互通
 
+> **v1.1 更新**: 统一 Material 3 主题美化（圆角卡片 / SectionHeader / StatusCard / 夜间模式）; 服务端地址经 `shared_preferences` 持久化, 重启自动恢复; 新增 UI 冒烟测试 `test/smoke_test.dart`（6/6 通过）。
+
 ## 环境要求
 
 - Flutter SDK >= 3.0 (建议 3.16+)
