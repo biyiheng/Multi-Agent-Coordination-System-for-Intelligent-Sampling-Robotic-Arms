@@ -33,6 +33,15 @@ Thumbs.db
 logs/
 *.log
 
+# 本地 Flutter SDK (数 GB, 不入库)
+.flutter_sdk/
+
+# 测试运行产物
+test_results*.txt
+flutter_analyze.txt
+flutter_test.txt
+flutter_01.log
+
 # 生成数据 / 模型 / 大体积二进制 (共约 7GB, 不应入库)
 data/
 models/

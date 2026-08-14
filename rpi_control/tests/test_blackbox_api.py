@@ -8,6 +8,7 @@ Validates HTTP status codes, response schemas, error handling, and security.
 import json
 import sys
 import time
+import uuid
 from pathlib import Path
 
 # Ensure project root is on sys.path
@@ -20,6 +21,18 @@ from fastapi.testclient import TestClient
 from rpi_control.web.server import app
 
 client = TestClient(app)
+
+
+def _auth_headers() -> dict:
+    """Register a fresh user and return bearer auth headers for mutation tests."""
+    username = f"blackbox_{uuid.uuid4().hex[:12]}"
+    r = client.post(
+        "/api/v1/auth/register",
+        json={"username": username, "password": "secret123", "role": "user"},
+    )
+    assert r.status_code == 200, r.text
+    token = r.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
 
 
 # =============================================================================
@@ -95,7 +108,7 @@ class TestArmEndpoints:
             "joint_id": 1,
             "position": 45.0,
             "time": 1.0
-        })
+        }, headers=_auth_headers())
         assert response.status_code in (200, 400, 422)
 
     def test_move_joint_invalid_id(self):
@@ -104,18 +117,18 @@ class TestArmEndpoints:
             "joint_id": 99,
             "position": 45.0,
             "time": 1.0
-        })
+        }, headers=_auth_headers())
         assert response.status_code in (400, 422)
 
     def test_move_joint_missing_fields(self):
         """Missing required fields should be rejected."""
         response = client.post("/api/v1/arm/move/joint", json={
             "position": 45.0
-        })
+        }, headers=_auth_headers())
         assert response.status_code in (400, 422)
 
     def test_emergency_stop(self):
-        response = client.post("/api/v1/arm/estop")
+        response = client.post("/api/v1/arm/estop", headers=_auth_headers())
         assert response.status_code in (200, 202, 404)
 
     def test_get_end_effector_pose(self):
@@ -126,7 +139,7 @@ class TestArmEndpoints:
         response = client.post("/api/v1/arm/move/all", json={
             "positions": [0, 0, 0, 0, 0, 0],
             "time": 1.0
-        })
+        }, headers=_auth_headers())
         assert response.status_code in (200, 400, 422)
 
 
@@ -144,13 +157,13 @@ class TestVisionEndpoints:
     def test_detect_color(self):
         response = client.post("/api/v1/vision/detect/color", json={
             "color_name": "red"
-        })
+        }, headers=_auth_headers())
         assert response.status_code in (200, 202)
 
     def test_detect_color_invalid(self):
         response = client.post("/api/v1/vision/detect/color", json={
             "color_name": ""
-        })
+        }, headers=_auth_headers())
         assert response.status_code in (200, 400, 422)
 
     def test_capture_snapshot(self):
@@ -166,7 +179,7 @@ class TestTaskEndpoints:
     """Test task management endpoints."""
 
     def test_get_tasks(self):
-        response = client.get("/api/v1/task/list")
+        response = client.get("/api/v1/task/list", headers=_auth_headers())
         assert response.status_code == 200
 
     def test_create_task(self):
@@ -174,21 +187,21 @@ class TestTaskEndpoints:
             "task_type": "sampling",
             "priority": 1,
             "params": {"target_color": "red"}
-        })
+        }, headers=_auth_headers())
         assert response.status_code in (200, 201, 422)
 
     def test_create_task_empty_type(self):
         response = client.post("/api/v1/task/create", json={
             "task_type": "",
-        })
+        }, headers=_auth_headers())
         assert response.status_code in (201, 400, 422)
 
     def test_get_task_not_found(self):
-        response = client.get("/api/v1/task/nonexistent-id")
+        response = client.get("/api/v1/task/nonexistent-id", headers=_auth_headers())
         assert response.status_code in (404, 200)
 
     def test_cancel_task_not_found(self):
-        response = client.post("/api/v1/task/nonexistent-id/cancel")
+        response = client.post("/api/v1/task/nonexistent-id/cancel", headers=_auth_headers())
         assert response.status_code in (404, 200, 400, 405)
 
 
@@ -225,7 +238,7 @@ class TestSecurityBlackBox:
             "joint_id": "1; DROP TABLE tasks;--",
             "position": 45.0,
             "time": 1.0
-        })
+        }, headers=_auth_headers())
         assert response.status_code in (200, 400, 422)
 
     def test_xss_in_task_params(self):
@@ -233,7 +246,7 @@ class TestSecurityBlackBox:
         response = client.post("/api/v1/task/create", json={
             "task_type": "<script>alert('xss')</script>",
             "priority": 1
-        })
+        }, headers=_auth_headers())
         assert response.status_code in (200, 201, 400, 422)
 
     def test_large_payload_rejection(self):
@@ -241,7 +254,7 @@ class TestSecurityBlackBox:
         large_string = "A" * 100000
         response = client.post("/api/v1/task/create", json={
             "task_type": large_string,
-        })
+        }, headers=_auth_headers())
         assert response.status_code in (201, 400, 413, 422)
 
     def test_cors_headers_present(self):
@@ -261,14 +274,27 @@ class TestSecurityBlackBox:
         assert response.status_code in (405, 200, 404)
 
     def test_no_auth_bypass_for_mutation(self):
-        """Mutation endpoints should have some level of protection."""
+        """Mutation endpoints should require authentication (401 when missing)."""
         response = client.post("/api/v1/arm/move/joint", json={
             "joint_id": 1,
             "position": 45.0,
             "time": 1.0
         })
-        # Currently accepts requests without auth (known gap)
-        assert response.status_code in (200, 400, 401, 403)
+        # Protected now: unauthenticated mutation must be rejected.
+        assert response.status_code in (401, 403)
+
+        # Task mutation must also require authentication.
+        task_resp = client.post("/api/v1/task/create", json={
+            "name": "NoAuth Task",
+            "strategy": "grid",
+        })
+        assert task_resp.status_code in (401, 403)
+        start_resp = client.post("/api/v1/task/some-id/start")
+        assert start_resp.status_code in (401, 403)
+
+        # System config mutation must also require authentication.
+        config_resp = client.put("/api/v1/system/config", json={"safety": {}})
+        assert config_resp.status_code in (401, 403)
 
 
 # =============================================================================

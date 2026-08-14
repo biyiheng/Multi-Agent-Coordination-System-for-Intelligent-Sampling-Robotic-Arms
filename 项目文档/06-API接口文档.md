@@ -1898,9 +1898,124 @@ async def monitor():
 asyncio.run(monitor())
 ```
 
+---
+
+## 9. 多端互通 API (v1)
+
+> 多端互通服务器: App (Android/iOS) / 微信小程序 / Web / 硬件端 (RPi / ESP32 / STM32 / OpenMV)
+> 通过统一的账号体系、设备中心与 WebSocket 中枢实现数据互通。
+
+### 9.1 鉴权 (账号体系)
+
+所有端共享同一套账号。密码使用 PBKDF2-HMAC-SHA256 哈希,
+Token 仅存 SHA-256 哈希, 不存明文。
+
+| 方法 | 路径 | 说明 | 鉴权 |
+|------|------|------|------|
+| POST | `/api/v1/auth/register` | 注册并返回 token | 否 |
+| POST | `/api/v1/auth/login` | 登录并返回 token | 否 |
+| POST | `/api/v1/auth/logout` | 吊销当前用户全部 token | Bearer |
+| GET | `/api/v1/auth/me` | 当前用户信息 | Bearer |
+
+**请求/响应示例 (login):**
+
+```json
+// 请求
+{ "username": "alice", "password": "secret123", "scope": "app" }
+
+// 响应
+{
+  "access_token": "<hex-token>",
+  "token_type": "bearer",
+  "expires_in": 604800,
+  "user": { "id": "...", "username": "alice", "role": "user", "enabled": true }
+}
+```
+
+**鉴权方式:** 请求头 `Authorization: Bearer <access_token>` 或 `X-API-Key: <token>`。
+未提供或无效返回 `401`。
+
+### 9.2 设备中心 (设备注册与心跳)
+
+每个端 (App / 小程序 / Web / 硬件) 注册为一条设备记录, 服务端按
+`device_id + client_type` 路由遥测与命令。
+
+| 方法 | 路径 | 说明 | 鉴权 |
+|------|------|------|------|
+| POST | `/api/v1/devices/register` | 注册 / 心跳更新 | Bearer |
+| GET | `/api/v1/devices` | 设备列表 (可按 `client_type`/`status` 过滤) | Bearer |
+| GET | `/api/v1/devices/{id}` | 单个设备详情 | Bearer |
+| POST | `/api/v1/devices/{id}/offline` | 标记设备离线 | Bearer |
+
+**设备注册请求示例:**
+
+```json
+{
+  "device_id": "app-alice",
+  "name": "App-Alice",
+  "device_type": "app",
+  "client_type": "app",
+  "mac": null,
+  "ip": "192.168.1.50",
+  "firmware_version": "1.0.0",
+  "extra": { "platform": "android", "app_version": "1.0.0" }
+}
+```
+
+### 9.3 WiFi / ESP32 配网 API
+
+| 方法 | 路径 | 说明 | 鉴权 |
+|------|------|------|------|
+| GET | `/api/v1/wifi/status` | ESP32 / WiFi 模块状态 | Bearer |
+| POST | `/api/v1/wifi/connect` | STA 连接现有热点 | Bearer |
+| POST | `/api/v1/wifi/hotspot` | AP 创建软热点 | Bearer |
+| GET | `/api/v1/wifi/scan` | 扫描周边 AP | Bearer |
+| POST | `/api/v1/wifi/reset` | ESP32 软复位 | Bearer |
+
+**connect 请求/响应示例:**
+
+```json
+// 请求
+{ "ssid": "HomeWiFi", "password": "12345678", "timeout": 15.0 }
+
+// 响应
+{ "status": "ok", "ssid": "HomeWiFi", "ip": "192.168.1.100", "mode": "sta" }
+```
+
+### 9.4 WebSocket 多端互通中枢 `/ws/hub`
+
+App / 小程序 / Web / 硬件端 通过 `/ws/hub` 建立长连接统一互通。
+
+**连接协议 (JSON):**
+
+```
+Client -> Hub:
+  {"type":"hello", "device_id":"app-alice", "client_type":"app",
+   "device_type":"app", "role":"controller|observer", "name":"App-Alice"}
+  {"type":"command", "target":"<device_id>|all|hardware",
+   "action":"wifi.scan", "payload": {...}, "seq": 1001}
+  {"type":"telemetry", "data": {...}}
+  {"type":"ping"}
+
+Hub -> Client:
+  {"type":"welcome", "client_id":"...", "device_id":"..."}
+  {"type":"command_ack", "seq":1001, "status":"ok", "targets":[...]}
+  {"type":"command", "from":"app-alice", "action":"wifi.scan", "payload":{...}}
+  {"type":"telemetry", "from":"esp32-01", "data":{...}}
+  {"type":"device_status", "device_id":"esp32-01", "status":"online|offline"}
+  {"type":"pong"}
+```
+
+**特性:**
+- 首次 `hello` 绑定 `device_id + client_type`, 自动写入设备中心 (online)
+- `command.target` 支持指定设备 / `all` / `hardware` 三类路由
+- 断连时自动标记设备 offline 并广播 `device_status`
+- 在线设备快照: `GET /api/v1/hub/devices`
+
 ### B. 文档变更记录
 
 | 版本 | 日期 | 变更内容 | 作者 |
 |------|------|---------|------|
 | v1.0.0 | 2026-01-15 | 初始版本 | 项目组 |
 | v2.0.0 | 2026-07-23 | 增加 WebSocket、UART 协议、完整示例 | 项目组 |
+| v2.1.0 | 2026-08-14 | 增加多端互通 API: 鉴权 / 设备中心 / WiFi 配网 / WebSocket 中枢 | 项目组 |

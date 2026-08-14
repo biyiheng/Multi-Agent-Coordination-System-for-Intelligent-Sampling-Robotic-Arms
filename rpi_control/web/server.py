@@ -18,8 +18,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from rpi_control.database.repository import db_manager
-from rpi_control.web.routes import arm_routes, vision_routes, task_routes, monitor_routes
+from rpi_control.web.routes import (
+    arm_routes, vision_routes, task_routes, monitor_routes,
+    auth_routes, device_routes, wifi_routes, system, loop_routes,
+    sample_routes,
+)
 from rpi_control.web.websocket.handler import ws_manager, telemetry_stream
+from rpi_control.web.websocket.hub import device_hub, handle_hub_connection
 
 # Configure logging
 log_dir = Path("./logs")
@@ -95,6 +100,12 @@ app.include_router(arm_routes.router)
 app.include_router(vision_routes.router)
 app.include_router(task_routes.router)
 app.include_router(monitor_routes.router)
+app.include_router(auth_routes.router)
+app.include_router(device_routes.router)
+app.include_router(wifi_routes.router)
+app.include_router(system.router)
+app.include_router(loop_routes.router)
+app.include_router(sample_routes.router)
 
 # Static file serving for camera snapshots
 snapshots_dir = Path("./data/snapshots")
@@ -149,6 +160,23 @@ async def websocket_telemetry(websocket: WebSocket):
         logger.error(f"WebSocket error for client {client_id}: {e}")
     finally:
         await ws_manager.disconnect(websocket)
+
+
+@app.websocket("/ws/hub")
+async def websocket_hub(websocket: WebSocket):
+    """WebSocket endpoint for the multi-end device hub (App/小程序/Web/硬件).
+
+    客户端先发送 hello 绑定 device_id + client_type, 之后可通过
+    command / telemetry / ping 消息与其它端数据互通。
+    """
+    await handle_hub_connection(websocket)
+
+
+@app.get("/api/v1/hub/devices")
+async def hub_devices():
+    """List devices currently connected to the multi-end hub."""
+    return {"status": "ok", "count": device_hub.client_count,
+            "devices": device_hub.get_devices()}
 
 
 def main():

@@ -1,0 +1,30 @@
+name: smart_sampling_arm_app
+description: 智能采样机械臂 远程控制 App (Android / iOS 双端)
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # HTTP REST 客户端 (访问 /api/v1/*)
+  http: ^1.1.0
+  # WebSocket 多端互通中枢客户端 (/ws/hub)
+  web_socket_channel: ^2.4.0
+  # 状态管理
+  provider: ^6.0.5
+  # 登录状态持久化
+  shared_preferences: ^2.2.2
+  # 设备标识 (可选, 用于生成 device_id)
+  # flutter_localizations:
+  #   sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+
+flutter:
+  uses-material-design: true

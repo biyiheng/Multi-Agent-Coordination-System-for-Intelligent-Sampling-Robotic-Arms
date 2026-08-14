@@ -2,6 +2,7 @@
 
 import json
 import sys
+import uuid
 from pathlib import Path
 
 import pytest
@@ -17,6 +18,18 @@ from fastapi.testclient import TestClient
 from rpi_control.web.server import app
 
 client = TestClient(app)
+
+
+def _auth_headers() -> dict:
+    """Register a fresh user and return bearer auth headers for mutation tests."""
+    username = f"testapi_{uuid.uuid4().hex[:12]}"
+    r = client.post(
+        "/api/v1/auth/register",
+        json={"username": username, "password": "secret123", "role": "user"},
+    )
+    assert r.status_code == 200, r.text
+    token = r.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
 
 
 class TestHealthEndpoints:
@@ -71,21 +84,21 @@ class TestArmEndpoints:
 
     def test_emergency_stop(self):
         """Test emergency stop endpoint."""
-        response = client.post("/api/v1/arm/estop")
+        response = client.post("/api/v1/arm/estop", headers=_auth_headers())
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "ok"
 
     def test_return_to_origin(self):
         """Test return to origin endpoint."""
-        response = client.post("/api/v1/arm/origin")
+        response = client.post("/api/v1/arm/origin", headers=_auth_headers())
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "ok"
 
     def test_stop_arm(self):
         """Test soft stop endpoint."""
-        response = client.post("/api/v1/arm/stop")
+        response = client.post("/api/v1/arm/stop", headers=_auth_headers())
         assert response.status_code == 200
 
     def test_move_single_joint(self):
@@ -93,6 +106,7 @@ class TestArmEndpoints:
         response = client.post(
             "/api/v1/arm/move/joint",
             json={"joint_id": 1, "position": 90.0, "time": 1.0},
+            headers=_auth_headers(),
         )
         assert response.status_code == 200
         data = response.json()
@@ -103,6 +117,7 @@ class TestArmEndpoints:
         response = client.post(
             "/api/v1/arm/move/joint",
             json={"joint_id": 10, "position": 90.0, "time": 1.0},
+            headers=_auth_headers(),
         )
         assert response.status_code == 400
 
@@ -111,6 +126,7 @@ class TestArmEndpoints:
         response = client.post(
             "/api/v1/arm/move/all",
             json={"positions": [1500, 1500, 1500, 1500, 1500, 1000], "time": 1.0},
+            headers=_auth_headers(),
         )
         assert response.status_code == 200
 
@@ -119,17 +135,20 @@ class TestArmEndpoints:
         response = client.post(
             "/api/v1/arm/move/all",
             json={"positions": [1500, 1500], "time": 1.0},
+            headers=_auth_headers(),
         )
         assert response.status_code == 400
 
     def test_open_gripper(self):
         """Test opening the gripper."""
-        response = client.post("/api/v1/arm/gripper/open")
+        response = client.post("/api/v1/arm/gripper/open", headers=_auth_headers())
         assert response.status_code == 200
 
     def test_close_gripper(self):
         """Test closing the gripper."""
-        response = client.post("/api/v1/arm/gripper/close", json={"force": 50.0})
+        response = client.post(
+            "/api/v1/arm/gripper/close", json={"force": 50.0}, headers=_auth_headers()
+        )
         assert response.status_code == 200
 
     def test_get_workspace(self):
@@ -154,17 +173,18 @@ class TestTaskEndpoints:
                 "bounds": {"x_min": 0, "x_max": 100, "y_min": 0, "y_max": 100, "z": 10},
                 "parameters": {"spacing": 20},
             },
+            headers=_auth_headers(),
         )
         assert response.status_code in [200, 201]
 
     def test_list_tasks(self):
         """Test listing all tasks."""
-        response = client.get("/api/v1/task/list")
+        response = client.get("/api/v1/task/list", headers=_auth_headers())
         assert response.status_code == 200
 
     def test_get_task_not_found(self):
         """Test getting a non-existent task."""
-        response = client.get("/api/v1/task/nonexistent-id")
+        response = client.get("/api/v1/task/nonexistent-id", headers=_auth_headers())
         assert response.status_code == 404
 
 
@@ -181,6 +201,7 @@ class TestVisionEndpoints:
         response = client.post(
             "/api/v1/vision/detect/color",
             json={"color": "red", "threshold": {}},
+            headers=_auth_headers(),
         )
         assert response.status_code in [200, 404, 501]
 
@@ -204,16 +225,18 @@ class TestErrorHandling:
 
     def test_invalid_json(self):
         """Test sending invalid JSON."""
+        h = _auth_headers()
+        h["Content-Type"] = "application/json"
         response = client.post(
             "/api/v1/arm/move/joint",
             content=b"not valid json",
-            headers={"Content-Type": "application/json"},
+            headers=h,
         )
         assert response.status_code in [400, 422]
 
     def test_missing_required_fields(self):
         """Test sending request with missing required fields."""
-        response = client.post("/api/v1/arm/move/joint", json={})
+        response = client.post("/api/v1/arm/move/joint", json={}, headers=_auth_headers())
         assert response.status_code in [400, 422]
 
     def test_nonexistent_endpoint(self):

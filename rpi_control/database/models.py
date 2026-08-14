@@ -188,3 +188,71 @@ class MetaSkillModel(Base):
     rules_json = Column(Text, default="[]")
     created_at = Column(DateTime, default=_utcnow)
     updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+
+# =============================================================================
+# Multi-End Interop Models (多端互通 / 鉴权 / 设备注册)
+# =============================================================================
+
+
+class UserModel(Base):
+    """Database model for platform users (App / Web / 小程序 共享账号)."""
+    __tablename__ = "users"
+
+    id = Column(String(64), primary_key=True)
+    username = Column(String(64), unique=True, nullable=False, index=True)
+    password_hash = Column(String(256), nullable=False)
+    role = Column(String(16), nullable=False, default="user")  # admin / user / viewer
+    enabled = Column(Integer, default=1)  # 0=False, 1=True
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+
+class AuthTokenModel(Base):
+    """Database model for issued API tokens."""
+    __tablename__ = "auth_tokens"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(String(64), ForeignKey("users.id"), nullable=False, index=True)
+    token_hash = Column(String(128), unique=True, nullable=False, index=True)
+    scope = Column(String(32), nullable=False, default="app")
+    expires_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=_utcnow)
+
+
+class DeviceModel(Base):
+    """Database model for registered end devices (RPi / ESP32 / STM32 / OpenMV / 客户端).
+
+    多端互通: 每个端 (App / 小程序 / Web / 硬件) 注册为一条设备记录,
+    服务端通过 device_id + client_type 路由遥测与命令, 形成统一设备中心。
+    """
+    __tablename__ = "devices"
+
+    id = Column(String(64), primary_key=True)  # 逻辑设备 ID
+    name = Column(String(128), nullable=False, default="")
+    device_type = Column(String(32), nullable=False, default="generic")  # rpi/esp32/stm32/openmv/app/...
+    client_type = Column(String(32), nullable=False, default="web")  # app/miniprogram/web/hardware
+    mac = Column(String(64), nullable=True, index=True)
+    ip = Column(String(64), nullable=True)
+    status = Column(String(16), nullable=False, default="offline")  # online/offline
+    firmware_version = Column(String(32), nullable=True)
+    extra_json = Column(Text, default="{}")
+    last_seen = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+
+class WifiStateModel(Base):
+    """Database model for persisted WiFi / ESP32 provisioning state.
+
+    存储最近一次成功配网信息与 ESP32 状态, 供 /api/v1/wifi/* 查询与恢复。
+    """
+    __tablename__ = "wifi_state"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    ssid = Column(String(128), nullable=True)
+    password = Column(String(128), nullable=True)
+    mode = Column(String(16), default="sta")  # sta / ap / apsta
+    ip = Column(String(64), nullable=True)
+    esp32_connected = Column(Integer, default=0)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)

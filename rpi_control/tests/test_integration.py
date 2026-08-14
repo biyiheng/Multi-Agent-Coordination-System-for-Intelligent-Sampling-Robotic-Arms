@@ -3,6 +3,7 @@
 import json
 import sys
 import unittest
+import uuid
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -17,6 +18,18 @@ from fastapi.testclient import TestClient
 from rpi_control.web.server import app
 from rpi_control.web.models.task import TaskCreate, TaskStatus, Bounds
 from rpi_control.web.models.status import ArmStatus, SensorData, SafetyStatus
+
+
+def _register_and_auth(client) -> dict:
+    """Register a fresh test user and return bearer auth headers."""
+    username = f"integ_{uuid.uuid4().hex[:12]}"
+    r = client.post(
+        "/api/v1/auth/register",
+        json={"username": username, "password": "secret123", "role": "user"},
+    )
+    assert r.status_code == 200, r.text
+    token = r.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
 
 
 class TestAPIEndpoints(unittest.TestCase):
@@ -53,6 +66,7 @@ class TestArmEndpoints(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.client = TestClient(app)
+        cls.headers = _register_and_auth(cls.client)
 
     def test_get_arm_status(self):
         response = self.client.get("/api/v1/arm/status")
@@ -72,52 +86,52 @@ class TestArmEndpoints(unittest.TestCase):
     def test_move_joint(self):
         response = self.client.post("/api/v1/arm/move/joint", json={
             "joint_id": 1, "position": 45.0, "time": 1.0
-        })
+        }, headers=self.headers)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["status"], "ok")
 
     def test_move_joint_invalid(self):
         response = self.client.post("/api/v1/arm/move/joint", json={
             "joint_id": 7, "position": 45.0
-        })
+        }, headers=self.headers)
         self.assertEqual(response.status_code, 400)
 
     def test_move_cartesian(self):
         response = self.client.post("/api/v1/arm/move/cartesian", json={
             "x": 200, "y": 100, "z": 50, "roll": 0, "pitch": 0, "yaw": 0
-        })
+        }, headers=self.headers)
         self.assertEqual(response.status_code, 200)
 
     def test_move_all(self):
         response = self.client.post("/api/v1/arm/move/all", json={
             "positions": [10, 20, 30, 40, 50, 60], "time": 1.0
-        })
+        }, headers=self.headers)
         self.assertEqual(response.status_code, 200)
 
     def test_move_all_invalid(self):
         response = self.client.post("/api/v1/arm/move/all", json={
             "positions": [10, 20, 30], "time": 1.0
-        })
+        }, headers=self.headers)
         self.assertEqual(response.status_code, 400)
 
     def test_stop(self):
-        response = self.client.post("/api/v1/arm/stop")
+        response = self.client.post("/api/v1/arm/stop", headers=self.headers)
         self.assertEqual(response.status_code, 200)
 
     def test_estop(self):
-        response = self.client.post("/api/v1/arm/estop")
+        response = self.client.post("/api/v1/arm/estop", headers=self.headers)
         self.assertEqual(response.status_code, 200)
 
     def test_origin(self):
-        response = self.client.post("/api/v1/arm/origin")
+        response = self.client.post("/api/v1/arm/origin", headers=self.headers)
         self.assertEqual(response.status_code, 200)
 
     def test_gripper_open(self):
-        response = self.client.post("/api/v1/arm/gripper/open")
+        response = self.client.post("/api/v1/arm/gripper/open", headers=self.headers)
         self.assertEqual(response.status_code, 200)
 
     def test_gripper_close(self):
-        response = self.client.post("/api/v1/arm/gripper/close", json={"force": 60})
+        response = self.client.post("/api/v1/arm/gripper/close", json={"force": 60}, headers=self.headers)
         self.assertEqual(response.status_code, 200)
 
     def test_workspace(self):
@@ -132,6 +146,7 @@ class TestVisionEndpoints(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.client = TestClient(app)
+        cls.headers = _register_and_auth(cls.client)
 
     def test_get_vision_status(self):
         response = self.client.get("/api/v1/vision/status")
@@ -140,28 +155,28 @@ class TestVisionEndpoints(unittest.TestCase):
     def test_detect_color(self):
         response = self.client.post("/api/v1/vision/detect/color", json={
             "color_name": "red"
-        })
+        }, headers=self.headers)
         self.assertEqual(response.status_code, 200)
         self.assertIn("detections", response.json())
 
     def test_detect_unknown_color(self):
         response = self.client.post("/api/v1/vision/detect/color", json={
             "color_name": "purple"
-        })
+        }, headers=self.headers)
         self.assertEqual(response.status_code, 400)
 
     def test_detect_apriltag(self):
-        response = self.client.post("/api/v1/vision/detect/apriltag", json={})
+        response = self.client.post("/api/v1/vision/detect/apriltag", json={}, headers=self.headers)
         self.assertEqual(response.status_code, 200)
         self.assertIn("tags", response.json())
 
     def test_classify(self):
-        response = self.client.post("/api/v1/vision/classify", json={})
+        response = self.client.post("/api/v1/vision/classify", json={}, headers=self.headers)
         self.assertEqual(response.status_code, 200)
         self.assertIn("top_prediction", response.json())
 
     def test_inspect(self):
-        response = self.client.post("/api/v1/vision/inspect", json={})
+        response = self.client.post("/api/v1/vision/inspect", json={}, headers=self.headers)
         self.assertEqual(response.status_code, 200)
         self.assertIn("inspection", response.json())
 
@@ -169,7 +184,7 @@ class TestVisionEndpoints(unittest.TestCase):
         response = self.client.post("/api/v1/vision/threshold", json={
             "color": "red",
             "threshold": {"h_min": 0, "h_max": 15, "s_min": 100, "s_max": 255, "v_min": 100, "v_max": 255}
-        })
+        }, headers=self.headers)
         self.assertEqual(response.status_code, 200)
 
 
@@ -179,6 +194,7 @@ class TestTaskEndpoints(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.client = TestClient(app)
+        cls.headers = _register_and_auth(cls.client)
 
     def test_create_task(self):
         response = self.client.post("/api/v1/task/create", json={
@@ -187,14 +203,14 @@ class TestTaskEndpoints(unittest.TestCase):
             "bounds": {"x_min": 0, "x_max": 100, "y_min": 0, "y_max": 100, "z": 10},
             "parameters": {"step": 50},
             "priority": 5,
-        })
+        }, headers=self.headers)
         self.assertEqual(response.status_code, 201)
         data = response.json()
         self.assertEqual(data["name"], "Test Task")
         self.assertIn("id", data)
 
     def test_list_tasks(self):
-        response = self.client.get("/api/v1/task/list")
+        response = self.client.get("/api/v1/task/list", headers=self.headers)
         self.assertEqual(response.status_code, 200)
         self.assertIsInstance(response.json(), list)
 
@@ -206,15 +222,15 @@ class TestTaskEndpoints(unittest.TestCase):
             "bounds": {"x_min": 0, "x_max": 50, "y_min": 0, "y_max": 50, "z": 5},
             "parameters": {"count": 10},
             "priority": 3,
-        })
+        }, headers=self.headers)
         task_id = create_resp.json()["id"]
 
-        response = self.client.get(f"/api/v1/task/{task_id}")
+        response = self.client.get(f"/api/v1/task/{task_id}", headers=self.headers)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["name"], "Get Test")
 
     def test_task_not_found(self):
-        response = self.client.get("/api/v1/task/nonexistent-id")
+        response = self.client.get("/api/v1/task/nonexistent-id", headers=self.headers)
         self.assertEqual(response.status_code, 404)
 
     def test_task_lifecycle(self):
@@ -225,31 +241,31 @@ class TestTaskEndpoints(unittest.TestCase):
             "bounds": {"x_min": 0, "x_max": 100, "y_min": 0, "y_max": 100, "z": 10},
             "parameters": {"step": 50},
             "priority": 1,
-        })
+        }, headers=self.headers)
         task_id = create_resp.json()["id"]
 
         # Start
-        start_resp = self.client.post(f"/api/v1/task/{task_id}/start")
+        start_resp = self.client.post(f"/api/v1/task/{task_id}/start", headers=self.headers)
         self.assertEqual(start_resp.status_code, 200)
 
         # Pause
-        pause_resp = self.client.post(f"/api/v1/task/{task_id}/pause")
+        pause_resp = self.client.post(f"/api/v1/task/{task_id}/pause", headers=self.headers)
         self.assertEqual(pause_resp.status_code, 200)
 
         # Resume
-        resume_resp = self.client.post(f"/api/v1/task/{task_id}/resume")
+        resume_resp = self.client.post(f"/api/v1/task/{task_id}/resume", headers=self.headers)
         self.assertEqual(resume_resp.status_code, 200)
 
         # Progress
-        progress_resp = self.client.get(f"/api/v1/task/{task_id}/progress")
+        progress_resp = self.client.get(f"/api/v1/task/{task_id}/progress", headers=self.headers)
         self.assertEqual(progress_resp.status_code, 200)
 
         # Cancel
-        cancel_resp = self.client.post(f"/api/v1/task/{task_id}/cancel")
+        cancel_resp = self.client.post(f"/api/v1/task/{task_id}/cancel", headers=self.headers)
         self.assertEqual(cancel_resp.status_code, 200)
 
         # Delete
-        delete_resp = self.client.delete(f"/api/v1/task/{task_id}")
+        delete_resp = self.client.delete(f"/api/v1/task/{task_id}", headers=self.headers)
         self.assertEqual(delete_resp.status_code, 200)
 
 
@@ -297,6 +313,7 @@ class TestIntegration(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.client = TestClient(app)
+        cls.headers = _register_and_auth(cls.client)
 
     def test_sampling_workflow(self):
         """Test end-to-end sampling workflow."""
@@ -307,7 +324,7 @@ class TestIntegration(unittest.TestCase):
             "bounds": {"x_min": 0, "x_max": 100, "y_min": 0, "y_max": 100, "z": 10},
             "parameters": {"step": 50},
             "priority": 5,
-        })
+        }, headers=self.headers)
         self.assertEqual(create_resp.status_code, 201)
         task_id = create_resp.json()["id"]
 
@@ -320,15 +337,15 @@ class TestIntegration(unittest.TestCase):
         self.assertEqual(vision_resp.status_code, 200)
 
         # 4. Start task
-        start_resp = self.client.post(f"/api/v1/task/{task_id}/start")
+        start_resp = self.client.post(f"/api/v1/task/{task_id}/start", headers=self.headers)
         self.assertEqual(start_resp.status_code, 200)
 
         # 5. Cancel task
-        cancel_resp = self.client.post(f"/api/v1/task/{task_id}/cancel")
+        cancel_resp = self.client.post(f"/api/v1/task/{task_id}/cancel", headers=self.headers)
         self.assertEqual(cancel_resp.status_code, 200)
 
         # 6. Delete task
-        delete_resp = self.client.delete(f"/api/v1/task/{task_id}")
+        delete_resp = self.client.delete(f"/api/v1/task/{task_id}", headers=self.headers)
         self.assertEqual(delete_resp.status_code, 200)
 
     def test_vision_motion_pipeline(self):
@@ -336,7 +353,7 @@ class TestIntegration(unittest.TestCase):
         # Detect color
         detect_resp = self.client.post("/api/v1/vision/detect/color", json={
             "color_name": "red"
-        })
+        }, headers=self.headers)
         self.assertEqual(detect_resp.status_code, 200)
         detections = detect_resp.json()["detections"]
         self.assertTrue(len(detections) > 0)
@@ -347,7 +364,7 @@ class TestIntegration(unittest.TestCase):
             move_resp = self.client.post("/api/v1/arm/move/cartesian", json={
                 "x": d["x"], "y": d["y"], "z": 50,
                 "roll": 0, "pitch": 0, "yaw": 0,
-            })
+            }, headers=self.headers)
             self.assertEqual(move_resp.status_code, 200)
 
     def test_safety_integration(self):
@@ -358,11 +375,16 @@ class TestIntegration(unittest.TestCase):
         self.assertEqual(safety_resp.json()["level"], "normal")
 
         # Trigger estop
-        self.client.post("/api/v1/arm/estop")
+        estop_resp = self.client.post("/api/v1/arm/estop", headers=self.headers)
+        self.assertEqual(estop_resp.status_code, 200)
 
         # Verify safety status reflects estop
         arm_resp = self.client.get("/api/v1/arm/status")
         self.assertTrue(arm_resp.json()["safety_status"]["emergency_stop"])
+
+        # Clear estop to avoid polluting subsequent tests
+        clear_resp = self.client.post("/api/v1/arm/estop/clear", headers=self.headers)
+        self.assertEqual(clear_resp.status_code, 200)
 
 
 if __name__ == "__main__":

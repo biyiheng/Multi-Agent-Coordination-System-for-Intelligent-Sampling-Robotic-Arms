@@ -1,13 +1,30 @@
-"""System management API routes."""
+"""System management API routes.
 
+- GET  /api/v1/system/info     系统信息
+- GET  /api/v1/system/config   读取配置 (默认值 + 数据库覆盖)
+- PUT  /api/v1/system/config   更新配置 (持久化到数据库)
+- GET  /api/v1/system/config/{key}   读取单个配置项
+- DELETE /api/v1/system/config/{key} 删除单个配置项
+- GET  /api/v1/system/logs     最近日志 (数据库)
+- POST /api/v1/system/restart  软重启
+- GET  /api/v1/system/diagnostics 诊断
+"""
+
+import json
 import logging
-import os
 import platform
 import time
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+
+from rpi_control.database.repository import (
+    ConfigRepository,
+    LogRepository,
+    db_manager,
+)
+from rpi_control.web.services import auth_service
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +32,55 @@ router = APIRouter(prefix="/api/v1/system", tags=["system"])
 
 # System start time for uptime calculation
 _start_time = time.time()
+
+# Default configuration template. Values stored in the database override these.
+_DEFAULT_CONFIG: Dict[str, Any] = {
+    "safety": {
+        "max_joint_velocity": 500,
+        "emergency_stop_timeout": 100,
+        "watchdog_interval": 50,
+        "comm_timeout": 500,
+    },
+    "motion": {
+        "speed_coefficient": 50,
+        "acceleration_coefficient": 30,
+        "default_move_time": 1000,
+    },
+    "vision": {
+        "frame_rate": 30,
+        "resolution": "QVGA",
+        "color_thresholds_enabled": True,
+        "apriltag_enabled": True,
+    },
+    "network": {
+        "host": "0.0.0.0",
+        "port": 8000,
+        "ws_port": 8001,
+    },
+    "cloud": {
+        "enabled": True,
+        "sync_interval": 60,
+    },
+}
+
+
+def _merge_config() -> Dict[str, Any]:
+    """Merge database-stored overrides on top of the defaults."""
+    merged = json.loads(json.dumps(_DEFAULT_CONFIG))
+    with db_manager.get_session() as session:
+        rows = ConfigRepository.list_all(session)
+        for row in rows:
+            try:
+                value = json.loads(row.value_json)
+            except (ValueError, TypeError):
+                value = row.value_json
+            if isinstance(value, dict) and not value:
+                continue
+            if row.key in merged and isinstance(merged[row.key], dict) and isinstance(value, dict):
+                merged[row.key].update(value)
+            else:
+                merged[row.key] = value
+    return merged
 
 
 @router.get("/info")
@@ -44,47 +110,21 @@ async def get_system_info():
 
 
 @router.get("/config")
-async def get_system_config():
-    """Get current system configuration."""
-    # In production, this would read from the database or config files
-    return {
-        "status": "ok",
-        "data": {
-            "safety": {
-                "max_joint_velocity": 500,
-                "emergency_stop_timeout": 100,
-                "watchdog_interval": 50,
-                "comm_timeout": 500,
-            },
-            "motion": {
-                "speed_coefficient": 50,
-                "acceleration_coefficient": 30,
-                "default_move_time": 1000,
-            },
-            "vision": {
-                "frame_rate": 30,
-                "resolution": "QVGA",
-                "color_thresholds_enabled": True,
-                "apriltag_enabled": True,
-            },
-            "network": {
-                "host": "0.0.0.0",
-                "port": 8000,
-                "ws_port": 8001,
-            },
-            "cloud": {
-                "enabled": True,
-                "sync_interval": 60,
-            },
-        },
-    }
+async def get_system_config(
+    _: Dict[str, Any] = Depends(auth_service.get_current_user),
+):
+    """Get current system configuration (defaults merged with database overrides)."""
+    return {"status": "ok", "data": _merge_config()}
 
 
 @router.put("/config")
-async def update_system_config(data: Dict[str, Any]):
-    """Update system configuration.
+async def update_system_config(
+    data: Dict[str, Any],
+    _: Dict[str, Any] = Depends(auth_service.get_current_user),
+):
+    """Update system configuration and persist to the database.
 
-    Request body: {key: value, ...}
+    Request body: {key: value, ...} or {safety: {...}, motion: {...}, ...}
     """
     if not data:
         raise HTTPException(status_code=400, detail="No configuration data provided")
@@ -107,38 +147,77 @@ async def update_system_config(data: Dict[str, Any]):
                     detail="emergency_stop_timeout must be between 10 and 1000 ms",
                 )
 
+    # Persist each top-level section into the database (system_config table).
+    with db_manager.get_session() as session:
+        for key, value in data.items():
+            ConfigRepository.set(session, key, value)
+
     logger.info(f"System configuration updated: {list(data.keys())}")
     return {"status": "ok", "message": "Configuration updated", "updated_keys": list(data.keys())}
 
 
+@router.get("/config/{key}")
+async def get_system_config_key(
+    key: str,
+    _: Dict[str, Any] = Depends(auth_service.get_current_user),
+):
+    """Get a single configuration section or key."""
+    merged = _merge_config()
+    if key not in merged:
+        raise HTTPException(status_code=404, detail=f"配置项不存在: {key}")
+    return {"status": "ok", "key": key, "value": merged[key]}
+
+
+@router.delete("/config/{key}")
+async def delete_system_config_key(
+    key: str,
+    _: Dict[str, Any] = Depends(auth_service.get_current_user),
+):
+    """Delete a stored configuration override (falls back to defaults)."""
+    with db_manager.get_session() as session:
+        if not ConfigRepository.delete(session, key):
+            # Not an error: the key simply has no stored override.
+            logger.info(f"Config key '{key}' has no stored override to delete")
+        else:
+            logger.info(f"Config key '{key}' deleted")
+    return {"status": "ok", "message": f"配置项 {key} 已删除 (恢复默认值)"}
+
+
 @router.get("/logs")
 async def get_system_logs(
-    level: Optional[str] = None,
     limit: int = 50,
-    source: Optional[str] = None,
+    action_type: Optional[str] = None,
+    _: Dict[str, Any] = Depends(auth_service.get_current_user),
 ):
-    """Get recent system log entries.
-
-    Query parameters:
-    - level: Filter by log level (DEBUG, INFO, WARNING, ERROR)
-    - limit: Maximum number of entries (default 50)
-    - source: Filter by source module
-    """
+    """Get recent system log entries from the database."""
     if limit > 200:
         limit = 200
     if limit < 1:
         limit = 1
 
-    # In production, this would read from the database or log files
+    with db_manager.get_session() as session:
+        if action_type:
+            logs = LogRepository.list_by_type(session, action_type, limit=limit)
+        else:
+            logs = LogRepository.list_recent(session, limit=limit)
+
+    entries = [
+        {
+            "id": log.id,
+            "action_type": log.action_type,
+            "details": json.loads(log.details_json) if log.details_json else {},
+            "timestamp": log.timestamp.isoformat() if log.timestamp else None,
+        }
+        for log in logs
+    ]
     return {
         "status": "ok",
         "data": {
-            "total": 0,
+            "total": len(entries),
             "limit": limit,
-            "filter": {"level": level, "source": source},
-            "entries": [],
+            "filter": {"action_type": action_type},
+            "entries": entries,
         },
-        "message": "Log retrieval stub - implement database-backed logging",
     }
 
 
@@ -178,7 +257,9 @@ async def get_network_status():
 
 
 @router.post("/restart")
-async def restart_system():
+async def restart_system(
+    _: Dict[str, Any] = Depends(auth_service.get_current_user),
+):
     """Restart the system (soft restart)."""
     logger.warning("System restart requested")
     return {
@@ -209,23 +290,59 @@ async def run_diagnostics():
 
 
 @router.get("/backup")
-async def create_backup():
+async def create_backup(
+    _: Dict[str, Any] = Depends(auth_service.get_current_user),
+):
     """Create a system configuration backup."""
-    backup_path = f"data/backups/config_backup_{int(time.time())}.json"
+    backup_dir = Path("data/backups")
+    backup_dir.mkdir(parents=True, exist_ok=True)
+    backup_path = backup_dir / f"config_backup_{int(time.time())}.json"
+    with db_manager.get_session() as session:
+        rows = ConfigRepository.list_all(session)
+        backup = {
+            "created_at": time.time(),
+            "configs": {
+                row.key: json.loads(row.value_json) if row.value_json else {}
+                for row in rows
+            },
+        }
+    backup_path.write_text(json.dumps(backup, ensure_ascii=False, indent=2), encoding="utf-8")
     return {
         "status": "ok",
         "message": "Backup created",
-        "path": backup_path,
+        "path": str(backup_path),
         "timestamp": time.time(),
     }
 
 
 @router.get("/backup/restore")
-async def restore_backup(backup_path: str):
-    """Restore system configuration from a backup file."""
-    if not backup_path or not os.path.exists(backup_path):
+async def restore_backup(
+    backup_path: str,
+    _: Dict[str, Any] = Depends(auth_service.get_current_user),
+):
+    """Restore system configuration from a backup file.
+
+    仅允许读取 data/backups 目录下的备份文件, 防止任意文件读取。
+    """
+    backup_dir = Path("data/backups").resolve()
+    target = (backup_dir / backup_path).resolve()
+    if not target.is_relative_to(backup_dir):
+        raise HTTPException(status_code=400, detail="备份路径必须位于 data/backups 目录内")
+    if not target.exists():
         raise HTTPException(status_code=404, detail="Backup file not found")
+    try:
+        with open(target, "r", encoding="utf-8") as f:
+            backup = json.load(f)
+    except (ValueError, OSError) as e:
+        raise HTTPException(status_code=400, detail=f"无效的备份文件: {e}")
+
+    configs = backup.get("configs", {})
+    with db_manager.get_session() as session:
+        for key, value in configs.items():
+            ConfigRepository.set(session, key, value)
+    logger.info(f"Configuration restored from {backup_path} ({len(configs)} keys)")
     return {
         "status": "ok",
         "message": f"Configuration restored from {backup_path}",
+        "restored_keys": len(configs),
     }

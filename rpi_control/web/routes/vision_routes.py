@@ -1,18 +1,28 @@
-"""Vision API routes."""
+"""Vision API routes.
 
+视觉状态与颜色阈值通过 ConfigRepository 持久化到数据库
+(system_config 表, key="vision_state" / "vision_thresholds")。
+"""
+
+import json
 import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
-from starlette.responses import FileResponse
+
+from rpi_control.database.repository import ConfigRepository, LogRepository, db_manager
+from rpi_control.web.services import auth_service
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/vision", tags=["vision"])
 
-_mock_vision_status = {
+_VISION_STATE_KEY = "vision_state"
+_VISION_THRESHOLDS_KEY = "vision_thresholds"
+
+_DEFAULT_VISION_STATE: Dict[str, Any] = {
     "camera_connected": True,
     "camera_resolution": "640x480",
     "fps": 30.0,
@@ -20,30 +30,71 @@ _mock_vision_status = {
     "active_filters": ["red", "blue", "green"],
 }
 
-_mock_color_thresholds: Dict[str, Dict[str, int]] = {
+_DEFAULT_COLOR_THRESHOLDS: Dict[str, Dict[str, int]] = {
     "red": {"h_min": 0, "h_max": 10, "s_min": 100, "s_max": 255, "v_min": 100, "v_max": 255},
     "blue": {"h_min": 100, "h_max": 130, "s_min": 100, "s_max": 255, "v_min": 100, "v_max": 255},
     "green": {"h_min": 40, "h_max": 80, "s_min": 100, "s_max": 255, "v_min": 100, "v_max": 255},
 }
 
 
+def _load_state() -> Dict[str, Any]:
+    """Load the persisted vision state from the database."""
+    with db_manager.get_session() as session:
+        saved = ConfigRepository.get(session, _VISION_STATE_KEY)
+    if not saved or not isinstance(saved, dict):
+        return dict(_DEFAULT_VISION_STATE)
+    merged = dict(_DEFAULT_VISION_STATE)
+    merged.update(saved)
+    return merged
+
+
+def _save_state(state: Dict[str, Any]) -> None:
+    with db_manager.get_session() as session:
+        ConfigRepository.set(session, _VISION_STATE_KEY, state)
+
+
+def _load_thresholds() -> Dict[str, Dict[str, int]]:
+    """Load persisted color thresholds from the database."""
+    with db_manager.get_session() as session:
+        saved = ConfigRepository.get(session, _VISION_THRESHOLDS_KEY)
+    if not saved or not isinstance(saved, dict):
+        return json.loads(json.dumps(_DEFAULT_COLOR_THRESHOLDS))
+    merged = json.loads(json.dumps(_DEFAULT_COLOR_THRESHOLDS))
+    merged.update(saved)
+    return merged
+
+
+def _save_thresholds(thresholds: Dict[str, Dict[str, int]]) -> None:
+    with db_manager.get_session() as session:
+        ConfigRepository.set(session, _VISION_THRESHOLDS_KEY, thresholds)
+
+
 @router.get("/status")
 async def get_vision_status():
     """Get vision system status."""
-    return _mock_vision_status
+    return _load_state()
 
 
 @router.post("/detect/color")
-async def detect_color(data: Dict[str, Any]):
+async def detect_color(
+    data: Dict[str, Any],
+    _: Dict[str, Any] = Depends(auth_service.get_current_user),
+):
     """Detect a specific color in the camera feed.
 
     Request body: {color_name: str}
     """
     color_name = data.get("color_name", "red")
-    if color_name not in _mock_color_thresholds:
+    thresholds = _load_thresholds()
+    if color_name not in thresholds:
         raise HTTPException(status_code=400, detail=f"Unknown color: {color_name}")
 
-    _mock_vision_status["last_detection"] = datetime.now(timezone.utc)
+    state = _load_state()
+    state["last_detection"] = datetime.now(timezone.utc).isoformat()
+    _save_state(state)
+
+    with db_manager.get_session() as session:
+        LogRepository.create(session, "vision_color_detect", {"color": color_name})
 
     return {
         "status": "ok",
@@ -63,9 +114,14 @@ async def detect_color(data: Dict[str, Any]):
 
 
 @router.post("/detect/apriltag")
-async def detect_apriltag(data: Dict[str, Any]):
+async def detect_apriltag(
+    data: Dict[str, Any],
+    _: Dict[str, Any] = Depends(auth_service.get_current_user),
+):
     """Detect AprilTags in the camera feed."""
-    _mock_vision_status["last_detection"] = datetime.now(timezone.utc)
+    state = _load_state()
+    state["last_detection"] = datetime.now(timezone.utc).isoformat()
+    _save_state(state)
 
     return {
         "status": "ok",
@@ -88,7 +144,10 @@ async def detect_apriltag(data: Dict[str, Any]):
 
 
 @router.post("/classify")
-async def classify_object(data: Dict[str, Any]):
+async def classify_object(
+    data: Dict[str, Any],
+    _: Dict[str, Any] = Depends(auth_service.get_current_user),
+):
     """Classify an object in the current view."""
     return {
         "status": "ok",
@@ -102,7 +161,10 @@ async def classify_object(data: Dict[str, Any]):
 
 
 @router.post("/inspect")
-async def quality_inspection(data: Dict[str, Any]):
+async def quality_inspection(
+    data: Dict[str, Any],
+    _: Dict[str, Any] = Depends(auth_service.get_current_user),
+):
     """Perform quality inspection on the current view."""
     return {
         "status": "ok",
@@ -136,9 +198,20 @@ async def get_snapshot():
     }
 
 
+@router.get("/thresholds")
+async def get_thresholds(
+    _: Dict[str, Any] = Depends(auth_service.get_current_user),
+):
+    """Get all color detection thresholds."""
+    return {"status": "ok", "thresholds": _load_thresholds()}
+
+
 @router.post("/threshold")
-async def set_threshold(data: Dict[str, Any]):
-    """Set color detection threshold.
+async def set_threshold(
+    data: Dict[str, Any],
+    _: Dict[str, Any] = Depends(auth_service.get_current_user),
+):
+    """Set color detection threshold (persisted to the database).
 
     Request body: {color: str, threshold: {h_min, h_max, s_min, s_max, v_min, v_max}}
     """
@@ -148,6 +221,23 @@ async def set_threshold(data: Dict[str, Any]):
     if not color:
         raise HTTPException(status_code=400, detail="Color name is required")
 
-    _mock_color_thresholds[color] = threshold
+    thresholds = _load_thresholds()
+    thresholds[color] = threshold
+    _save_thresholds(thresholds)
+
     logger.info(f"Threshold set for color '{color}': {threshold}")
     return {"status": "ok", "message": f"Threshold updated for {color}"}
+
+
+@router.delete("/threshold/{color}")
+async def delete_threshold(
+    color: str,
+    _: Dict[str, Any] = Depends(auth_service.get_current_user),
+):
+    """Remove a color threshold (falls back to default)."""
+    thresholds = _load_thresholds()
+    if color not in thresholds:
+        raise HTTPException(status_code=404, detail=f"Unknown color: {color}")
+    removed = thresholds.pop(color)
+    _save_thresholds(thresholds)
+    return {"status": "ok", "message": f"Threshold removed for {color}", "removed": removed}

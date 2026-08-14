@@ -80,6 +80,19 @@ OpenMV / Jetson 视觉节点、Apriltag 检测、颜色与目标分类、质量�
 ### 8. Web 远程控制 + 小程序
 FastAPI RESTful API + WebSocket 实时遥测 + Swagger UI（`/docs`）+ 微信小程序远程控制面板。
 
+### 9. 多端互通（App / 小程序 / Web / 硬件）
+多端互通服务器统一鉴权与设备中心，App（Android/iOS）、微信小程序、Web 与硬件端（RPi / ESP32 / STM32 / OpenMV）通过 **WebSocket 多端互通中枢 `/ws/hub`** 数据互通：
+- **账号体系**：注册 / 登录 / Token（PBKDF2 密码哈希 + SHA-256 令牌哈希）/ 角色权限（admin/user/viewer）
+- **设备中心**：各端注册 / 心跳 / 在线状态持久化到数据库
+- **命令路由**：定向（device_id）/ 分组（hardware）/ 广播三种路由，遥测实时推送
+- **WiFi / ESP32 配网**：STA 连接 / AP 热点 / 扫描 / 复位 / 状态持久化
+
+### 10. Android/iOS 双端 App（Flutter）
+`mobile_app/` 提供双端远程控制 App：登录注册、6 关节滑杆 / 笛卡尔 / 夹爪 / 回零 / 急停控制、实时监控（传感器 + 多端设备在线状态）、WiFi 配网、服务端地址设置。
+
+### 11. ESP32 WiFi 模块
+外接 ESP32 AT 模块（`rpi_control/hardware/esp32_wifi.py`）实现 STA/AP/扫描/复位，无硬件时自动回退**模拟模式**；另附独立配网固件 `esp32_firmware/`（SoftAP 配网 + NVS 持久化 + GPIO0 长按重置）。
+
 ---
 
 ## 🧠 运动学算法
@@ -119,7 +132,9 @@ FastAPI RESTful API + WebSocket 实时遥测 + Swagger UI（`/docs`）+ 微信�
 | 部署 | Docker / docker-compose / systemd / `start_all.sh` |
 | 边缘视觉 | OpenMV (MicroPython) / NVIDIA Jetson (可选) |
 | 底层固件 | STM32F103C8T6（C / Makefile）+ STM32H7 驱动参考 |
+| **双端 App** | **Flutter 3.0+（Android / iOS 远程控制）** |
 | 小程序 | 微信小程序（WXML / WXSS / JS） |
+| **WiFi 模块** | **ESP32 AT 指令 + 独立配网固件（C++ / Arduino 框架）** |
 | 机器学习 | numpy / scipy / scikit-learn（4 个 ML 模型） |
 | CI | GitHub Actions（C# 硬件调试 + 合并报告） |
 
@@ -147,9 +162,11 @@ FastAPI RESTful API + WebSocket 实时遥测 + Swagger UI（`/docs`）+ 微信�
 │   └── docker-compose.yml  # 容器编排
 ├── stm32_firmware/         # STM32F103 固件 + STM32H7 驱动参考
 ├── openmv_firmware/        # OpenMV 视觉固件 (MicroPython)
+├── esp32_firmware/         # ESP32 WiFi 配网固件（SoftAP/STA/NVS）
+├── mobile_app/             # Android/iOS 双端远程控制 App（Flutter）
 ├── mini_program/           # 微信小程序远程控制
 ├── hardware_debug_cs/      # C# 板卡/链路调试 + CI
-├── 项目文档/               # 完整项目文档（01–16）
+├── 项目文档/               # 完整项目文档（01–17）
 ├── start_all.sh            # 一键启动（含 --check / --stress / --ros2 / --jetson）
 └── README.md
 ```
@@ -192,31 +209,46 @@ cd rpi_control && python -m pytest tests/ -q
 docker compose -f rpi_control/docker-compose.yml up -d
 ```
 
+### 双端 App（Android / iOS）
+```bash
+cd mobile_app
+flutter pub get
+flutter build apk --release     # Android: build/app/outputs/flutter-apk/app-release.apk
+flutter build ios --release     # iOS（需 macOS）
+```
+> 默认连接 `192.168.1.100:8000`，可在 App「设置」页修改；登录后即可远程控制 / 实时监控 / WiFi 配网。
+
+### ESP32 WiFi 模块
+- **方案 A（推荐）**：ESP32 刷 Espressif AT 固件，接树莓派 UART，由服务端 WiFi API（`/api/v1/wifi/*`）控制（无硬件时自动模拟模式）。
+- **方案 B**：烧录 `esp32_firmware/esp32_wifi_provisioning/` 独立配网固件 → 手机连 `SmartArm-XXXX` 热点 → 访问 `192.168.4.1` 配网。
+
 ---
 
 ## 📚 文档索引
 
-`项目文档/` 下提供了完整文档（01–16）：
+`项目文档/` 下提供了完整文档（01–17）：
 
 | 编号 | 文档 | 编号 | 文档 |
 |------|------|------|------|
-| 01 | 项目结构文档 | 09 | 部署执行清单 |
-| 02 | 技术文档 | 10 | 工业级升级规划 |
-| 03 | 安全性文档 | 11 | 硬件采购清单 |
-| 04 | 部署文档 | 12 | 项目交付报告 |
-| 05 | 需求清单 | 13 | 压力测试方案 |
-| 06 | API 接口文档 | 14 | 真实硬件部署操作手册 |
-| 07 | 部署操作手册 | 15 | 现场工程师部署与验证操作手册 |
-| 08 | 验证报告 | 16 | 故障排查速查表 |
+| 01 | 项目结构文档 | 10 | 工业级升级规划 |
+| 02 | 技术文档 | 11 | 硬件采购清单 |
+| 03 | 安全性文档 | 12 | 项目交付报告 |
+| 04 | 部署文档 | 13 | 压力测试方案 |
+| 05 | 需求清单 | 14 | 真实硬件部署操作手册 |
+| 06 | API 接口文档 | 15 | 现场工程师部署与验证操作手册 |
+| 07 | 部署操作手册 | 16 | 故障排查速查表 |
+| 08 | 验证报告 | **17** | **部署操作指南（含 App / WiFi 模块）** |
+| 09 | 部署执行清单 | | |
 
 ---
 
 ## 🧪 测试与质量
 
-- 覆盖：运动学、轨迹规划、碰撞检测、工作空间、力控、动力学前馈、API、安全扫描、性能基准、**极端工况压力测试**
+- 覆盖：运动学、轨迹规划、碰撞检测、工作空间、力控、动力学前馈、API、安全扫描、性能基准、**极端工况压力测试**、**多端互通（鉴权/设备中心/WiFi API/WebSocket 中枢）**
 - 支持 `pytest`、`pytest-asyncio`、`pytest-cov`
-- 硬件仿真模式：无需物理硬件即可运行完整测试套件
+- 硬件仿真模式：无需物理硬件即可运行完整测试套件（ESP32 WiFi 自动模拟）
 - 压力测试报告：`reports/stress_test_results.json`（由 `--stress` 自动生成）
+- 多端互通测试：`python -m pytest rpi_control/tests/test_multient_interop.py -q`（10 项全过）
 
 ---
 

@@ -1,0 +1,26 @@
+# Flutter / Dart 构建产物
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+pubspec.lock.bak
+
+# 原生平台本地配置 (含本机 SDK 路径)
+android/local.properties
+android/.gradle/
+android/key.properties
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+ios/Flutter/ephemeral/
+
+# IDE / 编辑器
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
