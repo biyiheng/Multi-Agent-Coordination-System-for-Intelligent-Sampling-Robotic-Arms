@@ -12,6 +12,8 @@
 - **多端互通**: 通过 `/ws/hub` 与 小程序/Web/硬件端 数据互通
 
 > **v1.1 更新**: 统一 Material 3 主题美化（圆角卡片 / SectionHeader / StatusCard / 夜间模式）; 服务端地址经 `shared_preferences` 持久化, 重启自动恢复; 新增 UI 冒烟测试 `test/smoke_test.dart`（6/6 通过）。
+>
+> **v1.2 更新**: 服务端遥测推送升级至 20 Hz, App 监控面板数据刷新更平滑（与 `settings.yaml → protocol.telemetry_push_rate` 联动）; 后端安全监控新增温度/电流过载事件, 监控面板展示对应告警; 全量回归测试通过, 详见 [20-更新报告v1.2.md](../项目文档/20-更新报告v1.2.md)。
 
 ## 环境要求
 

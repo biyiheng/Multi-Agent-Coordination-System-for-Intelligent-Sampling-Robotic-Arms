@@ -27,7 +27,8 @@ class TelemetryStream:
     """
 
     # Default telemetry push interval (Hz)
-    DEFAULT_PUSH_RATE = 10  # 10 Hz = 100ms interval
+    # v1.2: 10Hz -> 20Hz, 对应《改进计划.md》§4.1 状态上报任务 20Hz
+    DEFAULT_PUSH_RATE = 20  # 20 Hz = 50ms interval
 
     def __init__(self, push_rate: float = DEFAULT_PUSH_RATE):
         """Initialize the telemetry stream.
@@ -53,6 +54,17 @@ class TelemetryStream:
     def set_arm_state(self, arm_state):
         """Set the arm state source for telemetry data."""
         self._arm_state = arm_state
+
+    def set_push_rate(self, push_rate: float) -> None:
+        """更新遥测推送频率 (Hz), 对应《改进计划.md》状态上报任务 20Hz.
+
+        Args:
+            push_rate: 新推送频率 (Hz), <=0 时忽略.
+        """
+        if push_rate > 0:
+            self._push_rate = push_rate
+            self._push_interval = 1.0 / push_rate
+            logger.info(f"Telemetry push rate updated to {push_rate} Hz")
 
     def set_sensor_data(self, sensor_data):
         """Set the sensor data source."""

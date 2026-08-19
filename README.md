@@ -10,8 +10,8 @@
 ![License](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)
 ![Platform](https://img.shields.io/badge/Platform-Raspberry%20Pi%2FJetson%2FLinux-important?style=flat-square)
 ![CI](https://img.shields.io/badge/CI-GitHub%20Actions-brightgreen?style=flat-square)
-![Version](https://img.shields.io/badge/Version-v1.1-blueviolet?style=flat-square)
-![Tests](https://img.shields.io/badge/Tests-412%20passed-brightgreen?style=flat-square)
+![Version](https://img.shields.io/badge/Version-v1.2-blueviolet?style=flat-square)
+![Tests](https://img.shields.io/badge/Tests-PASSING-brightgreen?style=flat-square)
 
 </div>
 
@@ -23,8 +23,21 @@
 
 - **核心价值**：多智能体协同决策 + 工业级实时安全约束 + 循环工程持续优化
 - **运行平台**：Raspberry Pi OS (64-bit) / Jetson / Linux / Windows（仿真模式）
-- **当前版本**：v1.1（基线 v1.0）
+- **当前版本**：v1.2（基线 v1.1）
 - **许可证**：MIT
+
+---
+
+## 🆕 v1.2 更新内容
+
+v1.2 依据《改进计划.md》对通信协议、实时安全与 Agent 能力进行升级（详见 [20-更新报告v1.2.md](项目文档/20-更新报告v1.2.md)）：
+
+- **统一帧格式通信协议**：新增 `frame_protocol.py`，实现 `帧头|目标地址|源地址|命令字|数据长度|数据|CRC16|帧尾` 标准帧协议，CRC16 校验、坏帧/篡改帧丢弃，供 STM32 / OpenMV / ESP32 通信层复用，与既有文本协议共存可配置切换；
+- **遥测推送升级至 20 Hz**：`TelemetryStream` 默认推送率 10Hz → 20Hz（`protocol.telemetry_push_rate` 可配置），监控数据刷新更平滑；
+- **实时安全监控增强**：新增温度过载 / 电流过载检测事件，1ms 安全周期内按关节监控，联动安全状态机；
+- **Agent 能力增强**：Vision Agent 新增 EMA 多帧融合滤波抑制检测抖动；Sampling Agent 分层采样升级为「等距分层 + 边界增强」，提升覆盖均匀性；
+- **模型重训练 Round 12**：合法爬取公开数据 + 合成数据重建训练集，全量重训 motion_ik / safety / quality / collision 并校验精度（碰撞召回率门控 ≥ 0.85）；
+- **全量回归测试通过**，详见 [21-测试报告v1.2.md](项目文档/21-测试报告v1.2.md)。
 
 ---
 
@@ -242,7 +255,7 @@ flutter build ios --release     # iOS（需 macOS）
 
 ## 📚 文档索引
 
-`项目文档/` 下提供了完整文档（01–19）：
+`项目文档/` 下提供了完整文档（01–21）：
 
 | 编号 | 文档 | 编号 | 文档 |
 |------|------|------|------|
@@ -255,6 +268,7 @@ flutter build ios --release     # iOS（需 macOS）
 | 07 | 部署操作手册 | 16 | 故障排查速查表 |
 | 08 | 验证报告 | 17 | 部署操作指南（含 App / WiFi 模块） |
 | 09 | 部署执行清单 | **18 / 19** | **v1.1 更新报告 / v1.1 测试报告** |
+| **20 / 21** | **v1.2 更新报告 / v1.2 测试报告** | | |
 
 ---
 
@@ -265,8 +279,8 @@ flutter build ios --release     # iOS（需 macOS）
 - 硬件仿真模式：无需物理硬件即可运行完整测试套件（ESP32 WiFi 自动模拟）
 - 压力测试报告：`reports/stress_test_results.json`（由 `--stress` 自动生成）
 - 多端互通测试：`python -m pytest rpi_control/tests/test_multient_interop.py -q`（10 项全过）
-- **全量回归（v1.1 实测）**：`python -m pytest rpi_control/tests -q` → **412 passed / 11 skipped / 0 failed**
-- **App 验证（v1.1 实测）**：`flutter analyze` 0 error、`flutter test`（UI 冒烟）6/6 通过，详见 [19-测试报告v1.1.md](项目文档/19-测试报告v1.1.md)
+- **全量回归（v1.2 实测）**：`python -m pytest rpi_control/tests -q` → **445 passed / 11 skipped / 0 failed**（含帧协议 19 项 + v1.2 增强特性 14 项）
+- **App 验证（v1.1 实测）**：`flutter analyze` 0 error、`flutter test`（UI 冒烟）6/6 通过，详见 [19-测试报告v1.1.md](项目文档/19-测试报告v1.1.md) 与 [21-测试报告v1.2.md](项目文档/21-测试报告v1.2.md)
 
 ---
 

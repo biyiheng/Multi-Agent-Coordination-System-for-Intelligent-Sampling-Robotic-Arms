@@ -42,6 +42,9 @@ flutter_analyze.txt
 flutter_test.txt
 flutter_01.log
 
+# pytest 本地临时目录 (沙箱 TMP 重定向)
+.pytest_tmp/
+
 # 生成数据 / 模型 / 大体积二进制 (共约 7GB, 不应入库)
 data/
 models/

@@ -22,6 +22,25 @@ from ..utils.error_handler import (
     error_notifier,
     async_retry,
 )
+# v1.2: 统一帧格式通信协议 (对应《改进计划.md》§5), CRC16 校验
+from .frame_protocol import (
+    ADDR_STM32,
+    ADDR_HOST,
+    CMD_ACK,
+    CMD_EMERGENCY_STOP,
+    CMD_GET_STATUS,
+    CMD_MOVE_ALL,
+    CMD_MOVE_JOINT,
+    CMD_SENSOR_READ,
+    CMD_STOP,
+    Frame,
+    encode_frame,
+    extract_frames,
+    make_estop_frame,
+    make_get_status_frame,
+    make_move_all_frame,
+    make_move_joint_frame,
+)
 
 logger = get_logger(__name__)
 
@@ -142,6 +161,8 @@ class STM32Interface:
         self._auto_reconnect = auto_reconnect
         self._protocol_mode = protocol_mode
         self._detected_protocol: Optional[str] = None
+        # v1.2: 统一帧协议开关 (默认关闭, 保持既有 #CMD! 文本协议兼容)
+        self._frame_enabled: bool = False
 
         self._serial: Optional[serial.Serial] = None
         self._lock: asyncio.Lock = asyncio.Lock()
@@ -581,6 +602,116 @@ class STM32Interface:
         # Small delay to allow echo to arrive
         await asyncio.sleep(0.01)
         return await self.read_response(timeout=timeout)
+
+    # ------------------------------------------------------------------
+    # v1.2 统一帧协议 (Frame Protocol, CRC16 校验)
+    # ------------------------------------------------------------------
+
+    def set_frame_mode(self, enabled: bool) -> None:
+        """启用/禁用统一帧协议模式.
+
+        Args:
+            enabled: True 使用帧协议封装, False 使用既有文本协议.
+        """
+        self._frame_enabled = enabled
+        logger.info(f"STM32 frame protocol mode: {'enabled' if enabled else 'disabled'}")
+
+    @property
+    def frame_mode(self) -> bool:
+        """是否启用统一帧协议模式."""
+        return self._frame_enabled
+
+    async def send_frame(self, data: bytes) -> None:
+        """发送一帧统一协议数据.
+
+        Args:
+            data: 编码后的帧字节串 (可由 frame_protocol.encode_frame 生成).
+
+        Raises:
+            CommunicationError: 写入失败.
+        """
+        if not HAS_PYSERIAL or self._serial is None:
+            logger.debug(f"SIM TX (frame): {data.hex()}")
+            return
+        async with self._lock:
+            try:
+                self._serial.write(data)  # type: ignore[union-attr]
+                self._serial.flush()  # type: ignore[union-attr]
+                self._last_sent_data = data
+                logger.debug(f"TX (frame): {data.hex()}")
+            except (serial.SerialException, AttributeError) as e:
+                self._connected = False
+                raise CommunicationError(
+                    f"Failed to send frame: {e}", code="STM32_FRAME_WRITE_FAILED"
+                ) from e
+
+    async def send_frame_command(
+        self,
+        target: int,
+        command: int,
+        payload: bytes = b"",
+        source: int = ADDR_HOST,
+    ) -> None:
+        """以统一帧协议发送一条命令 (自动编码 + CRC16).
+
+        Args:
+            target: 目标设备地址.
+            command: 命令字.
+            payload: 载荷字节串.
+            source: 源地址 (默认上位机).
+        """
+        frame = encode_frame(target, source, command, payload)
+        await self.send_frame(frame)
+
+    async def read_frame_response(self, timeout: Optional[float] = None) -> Optional[Frame]:
+        """从串口读取并解析一帧响应 (坏帧自动丢弃).
+
+        Args:
+            timeout: 读取超时 (秒), 默认使用实例超时.
+
+        Returns:
+            解析成功的 Frame, 或超时/无有效帧时返回 None.
+        """
+        if not HAS_PYSERIAL:
+            await asyncio.sleep(0.01)
+            return None
+
+        effective_timeout = timeout if timeout is not None else self._timeout
+        buffer = bytearray()
+        start = time.monotonic()
+        while time.monotonic() - start < effective_timeout:
+            async with self._lock:
+                if self._serial is not None and self._serial.in_waiting > 0:
+                    chunk = self._serial.read(self._serial.in_waiting)
+                    if chunk:
+                        buffer.extend(chunk)
+            frames, remaining = extract_frames(buffer)
+            if frames:
+                return frames[0]
+            buffer = remaining
+            await asyncio.sleep(0.002)
+        return None
+
+    async def frame_move_joint(
+        self, servo_id: int, pwm: int, move_time: int, target: int = ADDR_STM32
+    ) -> None:
+        """帧协议: 单关节运动命令."""
+        await self.send_frame(make_move_joint_frame(target, servo_id, pwm, move_time))
+
+    async def frame_move_all(
+        self, positions: List[int], move_time: int, target: int = ADDR_STM32
+    ) -> None:
+        """帧协议: 全关节运动命令."""
+        await self.send_frame(make_move_all_frame(target, positions, move_time))
+
+    async def frame_get_status(self, target: int = ADDR_STM32) -> Optional[Frame]:
+        """帧协议: 状态查询命令."""
+        await self.send_frame(make_get_status_frame(target))
+        return await self.read_frame_response()
+
+    async def frame_emergency_stop(self, target: int = ADDR_STM32) -> None:
+        """帧协议: 紧急停止命令 (最高优先级)."""
+        await self.send_frame(make_estop_frame(target))
 
     # ------------------------------------------------------------------
     # Servo Control Commands

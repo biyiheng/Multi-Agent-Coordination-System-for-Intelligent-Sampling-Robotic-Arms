@@ -240,6 +240,15 @@ async def initialize_system() -> bool:
         timeout=stm32_timeout,
     )
 
+    # v1.2: 统一帧协议开关 (对应《改进计划.md》§5 通信协议设计)
+    protocol_config = state.config.config.get("protocol", {})
+    frame_enabled = protocol_config.get("frame_enabled", False)
+    if frame_enabled:
+        state.stm32.set_frame_mode(True)
+        logger.info("STM32 unified frame protocol enabled (CRC16)")
+    else:
+        logger.info("STM32 legacy text protocol in use")
+
     try:
         await state.stm32.connect()
         logger.info("STM32 interface connected")

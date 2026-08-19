@@ -52,7 +52,14 @@ async def lifespan(app: FastAPI):
     db_manager.init_db()
     logger.info("Database initialized")
 
-    # Start telemetry streaming
+    # Start telemetry streaming (v1.2: 频率可从 settings.yaml protocol.telemetry_push_rate 配置)
+    try:
+        from rpi_control.utils.config_loader import load_config
+        _cfg = load_config()
+        _push_rate = float(_cfg.get("protocol.telemetry_push_rate", 20))
+        telemetry_stream.set_push_rate(_push_rate)
+    except Exception:  # noqa: BLE001
+        pass
     await telemetry_stream.start_streaming()
     logger.info("Telemetry streaming started")
 
@@ -77,7 +84,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Intelligent Sampling Robotic Arm API",
     description="REST API for controlling and monitoring an intelligent sampling robotic arm system",
-    version="1.0.0",
+    version="1.2.0",
     lifespan=lifespan,
     docs_url="/docs",
     redoc_url="/redoc",
@@ -118,7 +125,7 @@ async def root():
     """Root endpoint with API information."""
     return {
         "name": "Intelligent Sampling Robotic Arm API",
-        "version": "1.0.0",
+        "version": "1.2.0",
         "docs": "/docs",
         "redoc": "/redoc",
         "status": "running",
@@ -131,7 +138,7 @@ async def health_check():
     import time
     return {
         "status": "healthy",
-        "version": "1.0.0",
+        "version": "1.2.0",
         "uptime": "running",
         "timestamp": time.time(),
     }

@@ -11,6 +11,8 @@ import time
 from typing import Any, Dict, List, Optional
 
 from .stm32_comm import STM32Interface
+# v1.2: 统一帧协议命令字 (用于帧模式下的软停止等命令)
+from .frame_protocol import ADDR_STM32, CMD_STOP
 from ..utils.logger import get_logger
 from ..utils.error_handler import (
     HardwareError,
@@ -114,7 +116,11 @@ class ServoController:
         self._estimated_move_duration = move_time / 1000.0
 
         try:
-            await self._stm32.move_all_servos(positions, move_time)
+            # v1.2: 帧协议模式 (CRC16) 与既有文本协议并存
+            if self._stm32.frame_mode:
+                await self._stm32.frame_move_all(positions, move_time)
+            else:
+                await self._stm32.move_all_servos(positions, move_time)
             self._current_positions = list(positions)
         except CommunicationError:
             self._moving = False
@@ -158,7 +164,11 @@ class ServoController:
         )
 
         try:
-            await self._stm32.move_servo(joint_id, position, move_time)
+            # v1.2: 帧协议模式 (CRC16) 与既有文本协议并存
+            if self._stm32.frame_mode:
+                await self._stm32.frame_move_joint(joint_id, position, move_time)
+            else:
+                await self._stm32.move_servo(joint_id, position, move_time)
             self._current_positions[joint_id] = position
         except CommunicationError:
             raise
@@ -392,7 +402,10 @@ class ServoController:
         self._estimated_move_duration = 2.0  # estimated 2 seconds
 
         try:
-            await self._stm32.return_to_origin()
+            if self._stm32.frame_mode:
+                await self._stm32.frame_move_all([1500] * NUM_SERVOS, 1000)
+            else:
+                await self._stm32.return_to_origin()
             self._current_positions = [1500] * NUM_SERVOS
         except CommunicationError:
             self._moving = False
@@ -406,13 +419,22 @@ class ServoController:
         """
         logger.critical("EMERGENCY STOP - Halting all servos!")
         self._moving = False
-        await self._stm32.emergency_stop()
+        # v1.2: 紧急停止命令走帧协议 (最高优先级) 或既有文本协议
+        if self._stm32.frame_mode:
+            await self._stm32.frame_emergency_stop()
+        else:
+            await self._stm32.emergency_stop()
 
     async def stop(self) -> None:
         """Gracefully stop all servo movement."""
         logger.info("Stopping all servo movement")
         self._moving = False
-        await self._stm32.stop()
+        if self._stm32.frame_mode:
+            await self._stm32.send_frame_command(
+                target=ADDR_STM32, command=CMD_STOP, payload=b""
+            )
+        else:
+            await self._stm32.stop()
 
     @property
     def current_positions(self) -> List[int]:

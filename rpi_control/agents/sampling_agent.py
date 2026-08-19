@@ -304,9 +304,11 @@ class SamplingAgent(BaseAgent):
         bounds: Dict[str, Tuple[float, float]],
         strata: int = 4,
     ) -> List[SamplingPoint]:
-        """Generate stratified sampling points.
+        """Generate stratified sampling points (v1.2: 等距 + 边界增强).
 
-        Divides the workspace into strata and samples within each.
+        Divides the workspace into strata and evenly samples the center of
+        each stratum (等距), then adds boundary-enhanced points along the
+        workspace edges (边界增强) to prevent coverage gaps at the periphery.
 
         Args:
             bounds: Workspace bounds.
@@ -323,15 +325,35 @@ class SamplingAgent(BaseAgent):
         x_step = (x_max - x_min) / strata
         y_step = (y_max - y_min) / strata
 
+        # 等距分层: 每层取中心点, 保证内部覆盖均匀
         for i in range(strata):
             for j in range(strata):
-                # Random point within each stratum
-                x = x_min + i * x_step + x_step / 2
-                y = y_min + j * y_step + y_step / 2
+                x = x_min + (i + 0.5) * x_step
+                y = y_min + (j + 0.5) * y_step
                 points.append(SamplingPoint(
                     id=self._next_point_id(),
                     position=(x, y, z),
                     metadata={"stratum": (i, j)},
+                ))
+
+        # 边界增强: 沿四条边补充采样点, 避免边缘覆盖不足 (seen 集合去重角点)
+        seen: Set[Tuple[float, float]] = set()
+        for k in range(strata + 1):
+            for x, y in (
+                (x_min, y_min + k * y_step),   # 左边界
+                (x_max, y_min + k * y_step),   # 右边界
+                (x_min + k * x_step, y_min),   # 下边界
+                (x_min + k * x_step, y_max),   # 上边界
+            ):
+                xy = (round(x, 3), round(y, 3))
+                if xy in seen:
+                    continue
+                seen.add(xy)
+                points.append(SamplingPoint(
+                    id=self._next_point_id(),
+                    position=(x, y, z),
+                    priority=1,
+                    metadata={"boundary": True},
                 ))
 
         return points

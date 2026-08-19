@@ -61,6 +61,9 @@ class SafetyEventType(enum.Enum):
     ESTOP_PRESSED = "estop_pressed"
     POWER_LOSS = "power_loss"
     TEMPERATURE_WARNING = "temperature_warning"
+    # v1.2 新增: 传感器采集链路 (对应《改进计划.md》传感器采集任务 100Hz) 过载事件
+    TEMPERATURE_OVERLOAD = "temperature_overload"
+    CURRENT_OVERLOAD = "current_overload"
     SENSOR_FAULT = "sensor_fault"
 
 
@@ -193,6 +196,10 @@ class RealTimeSafetyController:
         self._joint_torque_limits: List[float] = [50.0] * num_joints
         self._collision_torque_threshold: float = 10.0  # Nm
         self._collision_force_threshold: float = 65.0   # N (脸部限值)
+        # v1.2 新增: 传感器采集过载限值 (对应《改进计划.md》传感器采集任务 100Hz)
+        self._joint_temperature_limits: List[float] = [70.0] * num_joints  # °C 过载
+        self._joint_temperature_warn: float = 55.0  # °C 预警
+        self._joint_current_limits: List[float] = [3.0] * num_joints  # A 过载
 
         # 事件历史
         self._events: Deque[SafetyEvent] = deque(maxlen=self.SAFETY_HISTORY_SIZE)
@@ -281,6 +288,9 @@ class RealTimeSafetyController:
             # 6. 力矩监控
             self._check_torque_limits()
 
+            # 6b. 传感器过载监控 (v1.2: 温度/电流, 对应传感器采集任务 100Hz)
+            self._check_sensor_overload()
+
             # 7. 力限制 (ISO/TS 15066)
             if external_force is not None:
                 self._check_force_limits(external_force)
@@ -317,6 +327,25 @@ class RealTimeSafetyController:
             self._joint_states[i].torque_nm = (
                 torques[i] if i < len(torques) else 0.0
             )
+
+    def update_joint_sensors(self,
+                             temperatures: Optional[List[float]] = None,
+                             currents: Optional[List[float]] = None) -> None:
+        """更新关节温度/电流传感器采集值 (v1.2, 对应传感器采集任务 100Hz).
+
+        由传感器采集链路周期调用, 将最新温度/电流写入各关节状态,
+        供过载监控 (_check_sensor_overload) 在安全周期内判限。
+
+        Args:
+            temperatures: 各关节温度 (°C), None 则保持当前值.
+            currents: 各关节电流 (A), None 则保持当前值.
+        """
+        with self._lock:
+            for i in range(self.num_joints):
+                if temperatures is not None and i < len(temperatures):
+                    self._joint_states[i].temperature_c = float(temperatures[i])
+                if currents is not None and i < len(currents):
+                    self._joint_states[i].current_a = float(currents[i])
 
     def _check_joint_limits(self) -> None:
         """检查关节限位."""
@@ -408,6 +437,54 @@ class RealTimeSafetyController:
                     source="torque_check",
                 ))
 
+    def _check_sensor_overload(self) -> None:
+        """传感器过载监控 (v1.2).
+
+        对应《改进计划.md》§4.1 传感器采集任务 (100Hz): 实时读取电流 / 电压 /
+        温度等传感器, 超限时触发过载事件并联动安全状态机。
+        """
+        for i, state in enumerate(self._joint_states):
+            if i >= self.num_joints:
+                break
+
+            # 温度过载 (critical)
+            if i < len(self._joint_temperature_limits) and \
+                    state.temperature_c > self._joint_temperature_limits[i]:
+                self._emit_event(SafetyEvent(
+                    event_type=SafetyEventType.TEMPERATURE_OVERLOAD,
+                    severity=2,
+                    description=f"Joint {i+1} temperature: "
+                                f"{state.temperature_c:.1f}°C > "
+                                f"{self._joint_temperature_limits[i]:.1f}°C",
+                    data={"joint": i,
+                          "temperature": state.temperature_c,
+                          "limit": self._joint_temperature_limits[i]},
+                    source="sensor_overload_check",
+                ))
+            elif state.temperature_c > self._joint_temperature_warn:
+                # 温度预警 (warning)
+                self._emit_event(SafetyEvent(
+                    event_type=SafetyEventType.TEMPERATURE_WARNING,
+                    severity=1,
+                    description=f"Joint {i+1} temperature: "
+                                f"{state.temperature_c:.1f}°C approaching limit",
+                    data={"joint": i, "temperature": state.temperature_c},
+                    source="sensor_overload_check",
+                ))
+
+            # 电流过载 (critical)
+            if i < len(self._joint_current_limits) and \
+                    state.current_a > self._joint_current_limits[i]:
+                self._emit_event(SafetyEvent(
+                    event_type=SafetyEventType.CURRENT_OVERLOAD,
+                    severity=2,
+                    description=f"Joint {i+1} current: {state.current_a:.2f} A > "
+                                f"{self._joint_current_limits[i]:.2f} A",
+                    data={"joint": i, "current": state.current_a,
+                          "limit": self._joint_current_limits[i]},
+                    source="sensor_overload_check",
+                ))
+
     def _check_force_limits(self, external_force: np.ndarray) -> None:
         """ISO/TS 15066 力限制检查."""
         force_magnitude = float(np.linalg.norm(external_force[:3]))
@@ -496,7 +573,10 @@ class RealTimeSafetyController:
                                          SafetyEventType.COMMUNICATION_TIMEOUT,
                                          SafetyEventType.JOINT_LIMIT_VIOLATION,
                                          SafetyEventType.WORKSPACE_VIOLATION,
-                                         SafetyEventType.POWER_LOSS):
+                                         SafetyEventType.POWER_LOSS,
+                                         # v1.2: 温度/电流过载联动保护性停止
+                                         SafetyEventType.TEMPERATURE_OVERLOAD,
+                                         SafetyEventType.CURRENT_OVERLOAD):
             self._safety_state = SafetyState.PROTECTIVE_STOP
         elif most_severe.event_type == SafetyEventType.HARDWARE_FAULT:
             self._safety_state = SafetyState.FAULT

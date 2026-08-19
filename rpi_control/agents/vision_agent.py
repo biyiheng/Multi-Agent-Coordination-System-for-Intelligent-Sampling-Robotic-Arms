@@ -65,6 +65,10 @@ class VisionAgent(BaseAgent):
             "z": (0.0, 300.0),
         }
         self._outlier_threshold: float = 3.0  # Standard deviations for outlier detection
+        # v1.2: EMA (指数移动平均) 多帧融合滤波, 提升连续检测稳定性
+        self._ema_alpha: float = 0.3  # 平滑因子 (越大越跟随最新帧)
+        self._ema_state: Optional[np.ndarray] = None  # (cx, cy, depth) 滑动均值
+        self._ema_count: int = 0
         # Calibrated camera parameters (for depth estimation)
         # OpenMV H7+ camera: OV5640 sensor, typical values for 320x240 resolution
         self._focal_length: float = 800.0  # pixels (will be updated by calibration)
@@ -504,6 +508,7 @@ class VisionAgent(BaseAgent):
         self.tracking_active = False
         self.tracking_target = None
         self.position_history.clear()
+        self.reset_ema()  # v1.2: 停止跟踪时重置 EMA 融合状态
         self.log("Tracking stopped")
 
     # =========================================================================
@@ -680,6 +685,53 @@ class VisionAgent(BaseAgent):
             "area": float(median_pos[2]),
             "num_samples": len(filtered),
         }
+
+    # =========================================================================
+    # EMA 多帧融合滤波 (v1.2)
+    # =========================================================================
+
+    def get_smoothed_position(self) -> Optional[Dict[str, Any]]:
+        """基于 EMA (指数移动平均) 的多帧融合滤波位置.
+
+        在 `get_filtered_position` 中值滤波基础上, 对 (cx, cy, depth)
+        做指数移动平均, 抑制帧间抖动, 提升抓取引导的稳定性。
+        每调用一次推进一帧; 无有效历史或历史中断时自动重置。
+
+        Returns:
+            平滑后的位置 dict (含 ema_alpha / ema_count), 或 None。
+        """
+        filtered = self.get_filtered_position()
+        if filtered is None:
+            # 历史中断, 重置 EMA 状态, 避免陈旧均值污染
+            self._ema_state = None
+            self._ema_count = 0
+            return None
+
+        current = np.array([filtered["cx"], filtered["cy"], filtered["area"]])
+        if self._ema_state is None:
+            self._ema_state = current.copy()
+            self._ema_count = 1
+        else:
+            self._ema_state = (
+                self._ema_alpha * current
+                + (1.0 - self._ema_alpha) * self._ema_state
+            )
+            self._ema_count += 1
+
+        return {
+            "cx": float(self._ema_state[0]),
+            "cy": float(self._ema_state[1]),
+            "area": float(self._ema_state[2]),
+            "num_samples": filtered["num_samples"],
+            "smoothed": True,
+            "ema_alpha": self._ema_alpha,
+            "ema_count": self._ema_count,
+        }
+
+    def reset_ema(self) -> None:
+        """重置 EMA 融合状态 (目标切换 / 停止跟踪时调用)."""
+        self._ema_state = None
+        self._ema_count = 0
 
     # =========================================================================
     # Multi-View Fusion
